@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "./styles/tokens.css";
+
+@theme {
+  --color-daret-dark: #0d1117;
+  --color-daret-card: #161b22;
+  --color-daret-border: #30363d;
+  --color-daret-muted: #8b949e;
+  --color-daret-fg: #f3f4f6;
+  --color-daret-green: #22c55e;
+  --color-daret-green-dim: #16a34a;
+  --color-daret-green-bright: #4ade80;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --color-daret-dark: #f3f4f6;
+  --color-daret-card: #ffffff;
+  --color-daret-border: #e5e7eb;
+  --color-daret-muted: #6b7280;
+  --color-daret-fg: #111827;
+  --color-daret-green: #16a34a;
+  --color-daret-green-dim: #15803d;
+  --color-daret-green-bright: #22c55e;
+}
+
+html {
+  @apply antialiased;
+}
+body {
+  @apply bg-daret-dark text-daret-fg min-h-screen;
+}

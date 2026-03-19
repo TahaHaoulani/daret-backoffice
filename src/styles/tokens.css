@@ -1,0 +1,30 @@
+/**
+ * Ops console design tokens: spacing, typography, container.
+ */
+:root {
+  --ops-container-max: 1320px;
+  --ops-container-padding: 1rem;
+  --ops-space-1: 0.25rem;
+  --ops-space-2: 0.5rem;
+  --ops-space-3: 0.75rem;
+  --ops-space-4: 1rem;
+  --ops-space-5: 1.25rem;
+  --ops-space-6: 1.5rem;
+  --ops-card-padding: var(--ops-space-4);
+  --ops-table-cell-padding-x: var(--ops-space-3);
+  --ops-table-cell-padding-y: var(--ops-space-2);
+  --ops-heading-size: 1.125rem;
+  --ops-heading-weight: 600;
+  --ops-label-size: 0.6875rem;
+  --ops-label-transform: uppercase;
+  --ops-label-opacity: 0.85;
+  --ops-value-size: 0.9375rem;
+}
+
+.ops-container {
+  max-width: var(--ops-container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--ops-container-padding);
+  padding-right: var(--ops-container-padding);
+}
