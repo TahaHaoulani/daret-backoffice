@@ -25,11 +25,11 @@ Admin web app for reviewing and granting KYC submissions. Dark theme with green 
    npm run dev
    ```
 
-   App runs at `http://localhost:5173` (or the port Vite prints).
+   App runs at `http://localhost:5174` (or the port Vite prints).
 
 3. **Backend and admin user**
 
-   - Backend must be running (see main repo README / `Daret_Back`). Ensure CORS allows your backoffice origin (e.g. `http://localhost:5173`).
+   - Backend must be running (see main repo README / `Daret_Back`). Ensure CORS allows your backoffice origin (e.g. `http://localhost:5174`).
    - Run migrations if needed: `cd Daret_Back && npx prisma migrate dev`
    - Create an admin user (if needed):
 

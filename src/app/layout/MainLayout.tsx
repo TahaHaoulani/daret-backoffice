@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../features/auth/AuthContext';
-import { useTheme } from '../theme/ThemeContext';
+import { UserProfileMenu } from '../../components/UserProfileMenu';
 import { useI18n } from '../i18n/I18nContext';
 import { ReferenceDataProvider } from '../referenceData/ReferenceDataContext';
 import { ReferenceDataLoader } from '../referenceData/ReferenceDataLoader';
@@ -24,8 +23,12 @@ function LocaleFlag({ locale }: { locale: Locale }) {
   );
 }
 
+function navLinkActive(pathname: string, to: string): boolean {
+  if (pathname === to) return true;
+  return pathname.startsWith(`${to}/`);
+}
+
 const navKeys = [
-  { to: '/dashboard', key: 'nav.dashboard' },
   { to: '/users', key: 'nav.users' },
   { to: '/granting', key: 'nav.granting' },
   { to: '/scoring', key: 'nav.scoring' },
@@ -40,8 +43,6 @@ const adminNavItems = [
 ] as const;
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
   const location = useLocation();
   const [langOpen, setLangOpen] = useState(false);
@@ -66,7 +67,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         <ReferenceDataLoader />
         <header className="border-b border-daret-border bg-daret-card/50 sticky top-0 z-10 w-full">
         <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14 gap-4">
-          <Link to="/dashboard" className="flex items-center shrink-0 text-daret-green hover:opacity-90 transition" aria-label="Daret Backoffice">
+          <Link to="/users" className="flex items-center shrink-0 text-daret-green hover:opacity-90 transition" aria-label="Daret Backoffice">
             <img src="/logo.svg" alt="Daret" className="h-8 w-8" />
           </Link>
           <nav className="flex items-center gap-6 flex-1 justify-center min-w-0">
@@ -75,7 +76,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   key={to}
                   to={to}
                   className={`text-sm font-medium transition whitespace-nowrap ${
-                    location.pathname === to || (to !== '/dashboard' && location.pathname.startsWith(to))
+                    navLinkActive(location.pathname, to)
                       ? 'text-daret-green'
                       : 'text-daret-muted hover:text-daret-fg'
                   }`}
@@ -149,26 +150,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
             </div>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-1.5 rounded-lg text-daret-muted hover:text-daret-fg hover:bg-daret-card transition"
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
-            <span className="text-sm text-daret-muted truncate max-w-[180px] sm:max-w-none">{user?.email ?? '—'}</span>
-            <button type="button" onClick={logout} className="text-sm text-daret-muted hover:text-daret-fg whitespace-nowrap">
-              {t('common.logOut')}
-            </button>
+            <UserProfileMenu />
           </div>
         </div>
       </header>

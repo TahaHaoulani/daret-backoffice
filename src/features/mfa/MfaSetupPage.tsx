@@ -78,7 +78,7 @@ export function MfaSetupPage() {
   }
 
   function handleDone() {
-    navigate('/dashboard', { replace: true });
+    navigate('/users', { replace: true });
   }
 
   function copyRecoveryCodes() {

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { fetchScoringModels, createScoringModel, duplicateScoringModel, activateScoringModel, deleteScoringModel, type ScoringModelListItem } from '../../api/scoring';
+import { fetchScoringModels, createScoringModel, duplicateScoringModel, deleteScoringModel, type ScoringModelListItem } from '../../api/scoring';
 import { useI18n } from '../../app/i18n/I18nContext';
 import { AdminTable, type AdminTableColumn, type SortDirection } from '../../components/AdminTable';
 
@@ -111,11 +111,6 @@ export function ScoringPage() {
       queryClient.invalidateQueries({ queryKey: ['scoring', 'models'] });
       if (res.data?.id) navigate(`/scoring/${res.data.id}`);
     },
-  });
-
-  const activateMu = useMutation({
-    mutationFn: (id: string) => activateScoringModel(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['scoring', 'models'] }),
   });
 
   const deleteMu = useMutation({

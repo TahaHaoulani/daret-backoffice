@@ -21,6 +21,8 @@ const KYC_MAP: Record<string, { label: string; variant: Variant }> = {
 const SUBMISSION_MAP: Record<string, Variant> = {
   DRAFT: 'default',
   SUBMITTED: 'warning',
+  PENDING_SCORING: 'warning',
+  SCORING_IN_PROGRESS: 'info',
   IN_REVIEW: 'info',
   APPROVED: 'success',
   REJECTED: 'error',

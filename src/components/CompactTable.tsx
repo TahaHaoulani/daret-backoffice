@@ -109,7 +109,25 @@ export function CompactTable<T>({
             rows.map((row) => (
               <tr
                 key={keyExtractor(row)}
-                onClick={onRowClick ? (e) => onRowClick(row, e) : undefined}
+                onClick={
+                  onRowClick
+                    ? (e) => {
+                        const node = e.target as Node | null;
+                        const el = node?.nodeType === Node.TEXT_NODE ? (node.parentElement as HTMLElement | null) : (node as HTMLElement | null);
+                        if (el?.closest('button, a, input, select, textarea, [data-stop-row-click]')) return;
+                        onRowClick(row, e);
+                      }
+                    : undefined
+                }
+                onAuxClick={
+                  onRowClick
+                    ? (e) => {
+                        if (e.button !== 1) return;
+                        e.preventDefault();
+                        onRowClick(row, e);
+                      }
+                    : undefined
+                }
                 className={`border-b border-daret-border/50 text-sm text-daret-muted hover:bg-daret-border/10 ${onRowClick ? 'cursor-pointer' : ''}`}
               >
                 {columns.map((col) => (

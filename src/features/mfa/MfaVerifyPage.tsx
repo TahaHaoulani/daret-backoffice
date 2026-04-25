@@ -46,7 +46,7 @@ export function MfaVerifyPage() {
         localStorage.setItem('accessToken', res.data.accessToken);
         localStorage.setItem('refreshToken', res.data.refreshToken!);
         if (res.data.user) setUser(res.data.user);
-        navigate('/dashboard', { replace: true });
+        navigate('/users', { replace: true });
       } else {
         setError(t('mfa.invalidCode'));
       }

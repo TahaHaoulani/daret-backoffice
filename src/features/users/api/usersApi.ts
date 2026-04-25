@@ -5,8 +5,11 @@ export interface UserSearchItem {
   fullName: string;
   email: string | null;
   phone: string | null;
+  /** ISO country of residence (profile or KYC legal residence). */
   country: string | null;
   kycStatus: string;
+  /** Latest completed scoring band for the user, if any. */
+  riskLevel: string | null;
   kycSubmittedAt: string | null;
   kycReviewedAt: string | null;
   circlesCount: number;
@@ -22,11 +25,39 @@ export interface UserSearchParams {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  /** Country of residence (profile or KYC); alias `countryOfResidence` also sent from UI. */
   country?: string;
+  countryOfResidence?: string;
   kycStatus?: string;
   hasActiveCircles?: boolean;
   createdFrom?: string;
   createdTo?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  countryOfBirth?: string;
+  cityOfBirth?: string;
+  addressCity?: string;
+  addressZipCode?: string;
+  addressCountry?: string;
+  documentStatus?: string;
+  livenessStatus?: string;
+  reviewDecision?: string;
+  riskLevel?: string;
+  reviewerId?: string;
+  professionalSituation?: string;
+  netMonthlyIncomeMin?: number;
+  netMonthlyIncomeMax?: number;
+  monthlyExpensesMin?: number;
+  monthlyExpensesMax?: number;
+  hasActiveLoans?: boolean;
+  debtToIncomeRatioMin?: number;
+  debtToIncomeRatioMax?: number;
+  remainingDisposableIncomeMin?: number;
+  remainingDisposableIncomeMax?: number;
+  documentType?: string;
+  missingDocumentSide?: string;
+  submittedFrom?: string;
+  submittedTo?: string;
   page?: number;
   size?: number;
   sortBy?: 'createdAt' | 'lastName' | 'kycStatus' | 'lastKycSubmittedAt';
@@ -47,6 +78,12 @@ export interface UserWorkspaceData {
   user: { id: string; email: string | null; kycStatus: string; createdAt?: string; updatedAt?: string };
   profile: Record<string, unknown> | null;
   kycProfile: Record<string, unknown> | null;
+  kycIdentitySelection: {
+    issuingCountryCode: string;
+    documentType: 'ID_CARD' | 'PASSPORT' | 'RESIDENCE_PERMIT';
+    createdAt: string | null;
+    updatedAt: string | null;
+  } | null;
   riskProfile: Record<string, unknown> | null;
   phoneVerification: { phoneE164: string; verifiedAt: string | null } | null;
   kyc: {
@@ -90,7 +127,9 @@ export interface UserCirclesData {
 export function fetchUsers(params: UserSearchParams): Promise<UserSearchResponse> {
   const sp = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== '') sp.set(k, String(v));
+    if (v === undefined || v === '') return;
+    if (typeof v === 'boolean') sp.set(k, v ? 'true' : 'false');
+    else sp.set(k, String(v));
   });
   return api.get(`/users?${sp}`).then((r) => r.data);
 }
@@ -109,4 +148,66 @@ export function fetchUserCircles(id: string): Promise<{ success: boolean; data?:
 
 export function fetchUserPayments(id: string): Promise<{ success: boolean; data?: { payments: unknown[] } }> {
   return api.get(`/users/${id}/payments`).then((r) => r.data);
+}
+
+/** Aggregated KYC review DTO (GET /users/:id/kyc-review). */
+export interface BackofficeUserKycReviewDTO {
+  userSummary: {
+    userId: string;
+    email: string | null;
+    fullName: string;
+    kycStatus: string;
+    kycReviewBadge: string;
+    riskLevel: string;
+    monthlyIncome: number;
+    monthlyExpenses: number;
+    monthlyLoanPayments: number;
+    disposableIncome: number;
+    debtToIncomeRatio: number | null;
+    currency: string;
+    latestSubmissionId: string | null;
+  };
+  identity: Record<string, unknown>;
+  address: Record<string, unknown>;
+  documents: {
+    selectedDocumentType: string | null;
+    items: Array<{
+      assetId: string;
+      label: string;
+      type: string;
+      status: string;
+      reviewBadge: string;
+      createdAt: string | null;
+      capturedAt: string | null;
+      rejectionReason: string | null;
+      extractedOcr: unknown;
+    }>;
+    selfie: Array<{
+      assetId: string;
+      status: string;
+      reviewBadge: string;
+      createdAt: string | null;
+      capturedAt: string | null;
+      rejectionReason: string | null;
+    }>;
+  };
+  liveness: Record<string, unknown>;
+  financialProfile: Record<string, unknown> | null;
+  /** Payslip, tax, bank statement, employment contract (newest first). */
+  incomeVerificationAssets?: Array<{
+    assetId: string;
+    type: string;
+    status: string;
+    reviewBadge: string;
+    uploadedAt: string | null;
+    rejectionReason: string | null;
+  }>;
+  activeLoans: Array<Record<string, unknown>>;
+  riskSummary: { missingDocuments: string[]; flags: string[]; scoring: Record<string, unknown> | null };
+  reviewHistory: Array<Record<string, unknown>>;
+  system: Record<string, unknown>;
+}
+
+export function fetchUserKycReview(id: string): Promise<{ success: boolean; data?: BackofficeUserKycReviewDTO }> {
+  return api.get(`/users/${id}/kyc-review`).then((r) => r.data);
 }

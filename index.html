@@ -5,7 +5,7 @@
       (function () {
         var k = 'daret-backoffice-theme';
         var s = localStorage.getItem(k);
-        var theme = (s === 'light' || s === 'dark') ? s : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        var theme = (s === 'light' || s === 'dark') ? s : 'dark';
         document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>

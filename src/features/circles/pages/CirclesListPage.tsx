@@ -51,17 +51,17 @@ export function CirclesListPage() {
             message={type === 'PUBLIC' ? 'Create a public circle to open the marketplace.' : 'No circles match this filter.'}
           />
         ) : (
-          <CompactTable
+          <CompactTable<AdminCircleSummary>
             columns={[
-              { key: 'name', label: 'Name', render: (r: AdminCircleSummary) => <Link to={`/circles/${r.id}`} className="text-daret-green hover:underline">{r.name}</Link> },
-              { key: 'circleType', label: 'Type', render: (r: AdminCircleSummary) => <span className="text-daret-muted">{r.circleType}</span> },
-              { key: 'lifecycleStatus', label: 'Status', render: (r: AdminCircleSummary) => <StatusChip status={r.lifecycleStatus ?? '—'} /> },
-              { key: 'allocationStatus', label: 'Allocation', render: (r: AdminCircleSummary) => <span className="text-daret-muted">{r.allocationStatus ?? '—'}</span> },
-              { key: 'memberCount', label: 'Members', render: (r: AdminCircleSummary) => `${r.memberCount} / ${r.members}` },
-              { key: 'amount', label: 'Amount', render: (r: AdminCircleSummary) => `${r.amount} ${r.currency}` },
-              { key: 'joinWindowEnd', label: 'Join until', render: (r: AdminCircleSummary) => r.joinWindowEnd ? new Date(r.joinWindowEnd).toLocaleDateString() : '—' },
+              { key: 'name', label: 'Name', render: (r) => <Link to={`/circles/${r.id}`} className="text-daret-green hover:underline">{r.name}</Link> },
+              { key: 'circleType', label: 'Type', render: (r) => <span className="text-daret-muted">{r.circleType}</span> },
+              { key: 'lifecycleStatus', label: 'Status', render: (r) => <StatusChip status={r.lifecycleStatus ?? '—'} /> },
+              { key: 'allocationStatus', label: 'Allocation', render: (r) => <span className="text-daret-muted">{r.allocationStatus ?? '—'}</span> },
+              { key: 'memberCount', label: 'Members', render: (r) => `${r.memberCount} / ${r.members}` },
+              { key: 'amount', label: 'Amount', render: (r) => `${r.amount} ${r.currency}` },
+              { key: 'joinWindowEnd', label: 'Join until', render: (r) => (r.joinWindowEnd ? new Date(r.joinWindowEnd).toLocaleDateString() : '—') },
             ]}
-            data={circles}
+            rows={circles}
             keyExtractor={(r) => r.id}
           />
         )}

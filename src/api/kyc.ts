@@ -159,3 +159,8 @@ export function addComment(id: string, comment: string): Promise<{ success: bool
 export function getSignedUrl(assetId: string): Promise<SignedUrlResponse> {
   return api.get(`/media/${assetId}/signed-url`).then((r) => r.data);
 }
+
+/** Liveness capture preview (same JWT pattern as user media assets). */
+export function getLivenessCaptureSignedUrl(captureId: string): Promise<SignedUrlResponse> {
+  return api.get(`/media/liveness-capture/${captureId}/signed-url`).then((r) => r.data);
+}

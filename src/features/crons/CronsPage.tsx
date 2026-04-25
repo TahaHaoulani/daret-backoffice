@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useI18n } from '../../app/i18n/I18nContext';
-import { fetchCronsList, fetchCronDetail, triggerCronRun, type CronJobListItem, type CronJobDetail } from '../../api/crons';
+import { fetchCronsList, fetchCronDetail, triggerCronRun, type CronJobListItem } from '../../api/crons';
 
 function statusBadge(status: string) {
   const s = status?.toLowerCase() || '';

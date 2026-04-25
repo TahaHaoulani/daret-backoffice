@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchSubmissions, type SubmissionStatus } from '../../api/kyc';
-import { CountryDisplay } from '../../../components/CountryDisplay';
+import { CountryDisplay } from '../../components/CountryDisplay';
 
 const STATUSES: SubmissionStatus[] = ['PENDING_SCORING', 'IN_REVIEW', 'SUBMITTED', 'SCORING_IN_PROGRESS', 'APPROVED', 'REJECTED'];
 const DEFAULT_STATUS: SubmissionStatus = 'IN_REVIEW';

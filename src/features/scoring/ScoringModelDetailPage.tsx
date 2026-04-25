@@ -22,7 +22,6 @@ import {
   type ScoringCriterionType,
   type ScoringRuleDto,
   type ScoreBand,
-  type ScoringScoreBandDto,
   type FraudPolicyConfigDto,
   type FinalRecommendationMatrixDto,
   type FraudRuleDto,
@@ -37,6 +36,8 @@ const REFERENCE_DOMAIN_BY_CRITERION_KEY: Record<string, string> = {
   profession: 'profession',
   nationality_country: 'nationality_country',
   residence_country: 'residence_country',
+  country_of_birth: 'nationality_country',
+  address_country: 'nationality_country',
 };
 
 const CRITERION_TYPES: { value: ScoringCriterionType; label: string }[] = [
@@ -47,7 +48,12 @@ const CRITERION_TYPES: { value: ScoringCriterionType; label: string }[] = [
 ];
 
 /** Criterion keys that use monetary values; bands are defined in scorecard base currency. */
-const FINANCIAL_CRITERION_KEYS = ['monthly_income', 'monthly_expenses'];
+const FINANCIAL_CRITERION_KEYS = [
+  'monthly_income',
+  'monthly_expenses',
+  'total_monthly_loan_payments',
+  'remaining_disposable_income',
+];
 
 /** Fraud rule keys that have backend evaluators; only these can be activated for a scorecard. */
 const IMPLEMENTED_FRAUD_RULE_KEYS = [
@@ -56,6 +62,9 @@ const IMPLEMENTED_FRAUD_RULE_KEYS = [
   'PHONE_COUNTRY_MISMATCH', 'AGE_EMPLOYMENT_INCONSISTENCY', 'INCOME_EMPLOYMENT_INCONSISTENCY',
   'DEVICE_ACCOUNT_VELOCITY', 'IP_VELOCITY', 'RAPID_KYC_ATTEMPTS', 'DISPOSABLE_EMAIL_DOMAIN',
   'NATIONALITY_RESIDENCE_INCONSISTENCY',
+  'IDENTITY_BIRTHPLACE_MISSING', 'IDENTITY_COUNTRY_MISMATCH', 'HIGH_DEBT_TO_INCOME', 'CRITICAL_DEBT_TO_INCOME',
+  'NEGATIVE_DISPOSABLE_INCOME', 'MULTIPLE_ACTIVE_LOANS', 'MISSING_ID_DOCUMENT_SIDE', 'FAILED_LIVENESS',
+  'LIVENESS_PENDING_TOO_LONG', 'FINANCIAL_PROFILE_INCONSISTENT',
 ];
 
 type CriteriaFilter = 'all' | 'active' | 'inactive';
@@ -153,8 +162,20 @@ export function ScoringModelDetailPage() {
   });
 
   const updateRuleMu = useMutation({
-    mutationFn: ({ ruleId, body }: { ruleId: string; body: { valueMin?: number | null; valueMax?: number | null; enumValue?: string | null; bandLabel?: string | null; points?: number } }) =>
-      updateRule(ruleId, body),
+    mutationFn: ({
+      ruleId,
+      body,
+    }: {
+      ruleId: string;
+      body: { valueMin?: number | null; valueMax?: number | null; enumValue?: string | null; bandLabel?: string | null; points?: number };
+    }) =>
+      updateRule(ruleId, {
+        ...(body.points !== undefined ? { points: body.points } : {}),
+        ...(body.valueMin != null ? { valueMin: body.valueMin } : {}),
+        ...(body.valueMax != null ? { valueMax: body.valueMax } : {}),
+        ...(body.enumValue != null && body.enumValue !== '' ? { enumValue: body.enumValue } : {}),
+        ...(body.bandLabel != null && body.bandLabel !== '' ? { bandLabel: body.bandLabel } : {}),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scoring', 'model', id] });
       setEditingRule(null);
@@ -370,7 +391,7 @@ export function ScoringModelDetailPage() {
     createRuleMu.mutate({ criterionId, body });
   }
 
-  function openEditRule(rule: ScoringRuleDto, criterionType: string) {
+  function openEditRule(rule: ScoringRuleDto) {
     setEditingRule(rule);
     setEditRulePoints(rule.points);
     setEditRuleMin(rule.valueMin != null ? String(rule.valueMin) : '');
@@ -778,6 +799,7 @@ export function ScoringModelDetailPage() {
                         <td className="py-3 pr-4">
                           {rule.severity ? (
                             <span className={`text-xs font-medium px-2 py-0.5 rounded uppercase ${
+                              rule.severity === 'CRITICAL' ? 'bg-red-600/30 text-red-300' :
                               rule.severity === 'HIGH' ? 'bg-red-500/20 text-red-400' :
                               rule.severity === 'MEDIUM' ? 'bg-amber-500/20 text-amber-400' : 'bg-daret-muted/30 text-daret-muted'
                             }`}>
@@ -1052,7 +1074,7 @@ export function ScoringModelDetailPage() {
                             <td className="py-2 pr-4 text-daret-fg">
                               {referenceDomain && r.enumValue ? (
                                 <>
-                                  <span>{getReferenceLabel(referenceDomain, r.enumValue) ?? r.enumValue}</span>
+                                  <span>{getReferenceLabel(referenceDomain, r.enumValue, locale) ?? r.enumValue}</span>
                                   <span className="ml-2 text-xs font-mono text-daret-muted" title="Canonical code">{r.enumValue}</span>
                                 </>
                               ) : (
@@ -1064,7 +1086,7 @@ export function ScoringModelDetailPage() {
                         <td className="py-2 pr-4 text-daret-fg">{r.points}</td>
                         <td className="py-2">
                           <button
-                            onClick={() => openEditRule(r, selectedCriterion.criterionType)}
+                            onClick={() => openEditRule(r)}
                             className="text-daret-muted hover:text-daret-green text-xs mr-2"
                           >
                             Edit

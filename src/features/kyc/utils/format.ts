@@ -29,6 +29,44 @@ export function formatCurrency(amount: number | null | undefined, currency: stri
   return `${formatted} ${currency}`;
 }
 
+/** Debt-to-income etc.: ratio 0.35 → "35.0%". */
+export function formatPercentRatio(ratio: number | null | undefined, fractionDigits = 1): string {
+  if (ratio == null || Number.isNaN(ratio)) return '—';
+  return `${(ratio * 100).toFixed(fractionDigits)}%`;
+}
+
+const LOAN_TYPE_LABELS: Record<string, string> = {
+  MORTGAGE: 'Mortgage',
+  AUTO_LOAN: 'Auto loan',
+  CONSUMER_LOAN: 'Consumer loan',
+  STUDENT_LOAN: 'Student loan',
+  CREDIT_CARD: 'Credit card',
+  MICROCREDIT: 'Microcredit',
+  OTHER: 'Other',
+};
+
+export function formatLoanType(value: string | null | undefined): string {
+  if (!value) return '—';
+  return (
+    LOAN_TYPE_LABELS[value] ??
+    value
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/^\w/, (c) => c.toUpperCase())
+  );
+}
+
+const KYC_DOC_TYPE_LABELS: Record<string, string> = {
+  ID_CARD: 'National ID card',
+  PASSPORT: 'Passport',
+  RESIDENCE_PERMIT: 'Residence permit',
+};
+
+export function formatKycDocumentType(value: string | null | undefined): string {
+  if (!value) return '—';
+  return KYC_DOC_TYPE_LABELS[value] ?? value.replace(/_/g, ' ');
+}
+
 /** Fallback English labels when reference cache is missing or wrong locale (e.g. first paint before load). */
 const EMPLOYMENT_STATUS_FALLBACK: Record<string, string> = {
   EMPLOYED: 'Employed',

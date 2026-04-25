@@ -17,6 +17,7 @@ import { UserProfileCards, RiskSignalsPanel, computeRiskSignals } from './compon
 import { RawDataAccordion } from './components/RawDataAccordion';
 import { ReviewChecklistCard } from './components/ReviewChecklistCard';
 import { SubmissionStatusChip } from './components/StatusChip';
+import { useI18n } from '../../app/i18n/I18nContext';
 
 const REJECT_REASONS = [
   'DOCUMENT_UNREADABLE',
@@ -34,6 +35,7 @@ export function SubmissionDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>('overview');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReasons, setRejectReasons] = useState<string[]>([]);
@@ -179,7 +181,7 @@ export function SubmissionDetailPage() {
 
             {tab === 'overview' && (() => {
               const displayUser = mapToDisplayUser(d as Parameters<typeof mapToDisplayUser>[0]);
-              const riskSignals = computeRiskSignals(displayUser);
+              const riskSignals = computeRiskSignals(displayUser, t);
               return (
                 <div className="space-y-6">
                   <ReviewChecklistCard data={d} />

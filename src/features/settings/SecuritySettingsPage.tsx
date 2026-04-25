@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   getSecurityMe,
   securityMfaReset,
@@ -13,7 +12,6 @@ import { useI18n } from '../../app/i18n/I18nContext';
 export function SecuritySettingsPage() {
   const { t } = useI18n();
   const { logout } = useAuth();
-  const queryClient = useQueryClient();
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof getSecurityMe>>['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [resetModal, setResetModal] = useState(false);

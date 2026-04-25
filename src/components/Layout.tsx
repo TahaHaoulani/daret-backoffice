@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
 const nav = [
-  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/users', label: 'Users' },
   { to: '/kyc/queue', label: 'KYC Queue' },
   { to: '/audit', label: 'Audit Log' },
 ];
@@ -16,7 +16,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <header className="border-b border-daret-border bg-daret-card/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
           <div className="flex items-center gap-8">
-            <Link to="/dashboard" className="text-daret-green font-semibold text-lg">Daret Backoffice</Link>
+            <Link to="/users" className="text-daret-green font-semibold text-lg">Daret Backoffice</Link>
             <nav className="flex gap-4">
               {nav.map(({ to, label }) => (
                 <Link

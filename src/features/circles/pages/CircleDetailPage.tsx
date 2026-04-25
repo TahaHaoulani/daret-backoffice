@@ -6,7 +6,10 @@ import {
   fetchCircleAllocations,
   runAllocation,
   updateCircle,
+  type AllocationsResponse,
 } from '../../../api/circles';
+
+type CircleAllocationRow = AllocationsResponse['allocations'][number];
 import { CompactTable } from '../../../components/CompactTable';
 import { StatusChip } from '../../../components/StatusChip';
 
@@ -145,15 +148,15 @@ export function CircleDetailPage() {
             {allocLoading ? (
               <p className="text-daret-muted">Loading…</p>
             ) : allocData?.allocations?.length ? (
-              <CompactTable
+              <CompactTable<CircleAllocationRow>
                 columns={[
-                  { key: 'userId', label: 'User ID', render: (r: { userId: string }) => <span className="font-mono text-xs">{r.userId.slice(0, 8)}…</span> },
-                  { key: 'assignedPositionK', label: 'Position', render: (r: { assignedPositionK: number }) => r.assignedPositionK },
-                  { key: 'clearingFeeCents', label: 'Fee (cents)', render: (r: { clearingFeeCents: number }) => r.clearingFeeCents },
-                  { key: 'clearingCashbackCents', label: 'Cashback (cents)', render: (r: { clearingCashbackCents: number }) => r.clearingCashbackCents },
-                  { key: 'allocatedAt', label: 'At', render: (r: { allocatedAt: string }) => new Date(r.allocatedAt).toLocaleString() },
+                  { key: 'userId', label: 'User ID', render: (r) => <span className="font-mono text-xs">{r.userId.slice(0, 8)}…</span> },
+                  { key: 'assignedPositionK', label: 'Position', render: (r) => r.assignedPositionK },
+                  { key: 'clearingFeeCents', label: 'Fee (cents)', render: (r) => r.clearingFeeCents },
+                  { key: 'clearingCashbackCents', label: 'Cashback (cents)', render: (r) => r.clearingCashbackCents },
+                  { key: 'allocatedAt', label: 'At', render: (r) => new Date(r.allocatedAt).toLocaleString() },
                 ]}
-                data={allocData.allocations}
+                rows={allocData.allocations}
                 keyExtractor={(r) => r.userId}
               />
             ) : (

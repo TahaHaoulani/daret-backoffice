@@ -11,7 +11,6 @@ import { MfaVerifyPage } from './features/mfa/MfaVerifyPage';
 import { SecuritySettingsPage } from './features/settings/SecuritySettingsPage';
 import { ReferenceDataPage } from './features/settings/ReferenceDataPage';
 import { ReferenceDomainDetailPage } from './features/settings/ReferenceDomainDetailPage';
-import { DashboardPage } from './features/dashboard/DashboardPage';
 import { UsersSearchPage } from './features/users/pages/UsersSearchPage';
 import { UserWorkspacePage } from './features/users/pages/UserWorkspacePage';
 import { GrantingQueuePage } from './features/granting/pages/GrantingQueuePage';
@@ -40,22 +39,11 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <MainLayout>
-              <Navigate to="/dashboard" replace />
-            </MainLayout>
+            <Navigate to="/users" replace />
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <DashboardPage />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/dashboard" element={<Navigate to="/users" replace />} />
       <Route
         path="/users"
         element={
@@ -197,7 +185,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/users" replace />} />
     </Routes>
   );
 }

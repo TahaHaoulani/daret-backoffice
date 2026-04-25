@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useCallback, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { fetchUserById, fetchUserKyc, fetchUserCircles, fetchUserPayments } from '../api/usersApi';
-import { getSignedUrl } from '../../../api/kyc';
+import { fetchUserById, fetchUserKyc, fetchUserCircles, fetchUserPayments, fetchUserKycReview } from '../api/usersApi';
+import { getSignedUrl, getLivenessCaptureSignedUrl } from '../../../api/kyc';
+import { UserKycRiskTab } from '../components/UserKycRiskTab';
 import { StatusChip } from '../../../components/StatusChip';
 import { KeyValueGrid } from '../../../components/KeyValueGrid';
 import { CopyableValue } from '../../kyc/components/CopyableValue';
@@ -12,11 +13,11 @@ import { CountryDisplay } from '../../../components/CountryDisplay';
 import { useI18n } from '../../../app/i18n/I18nContext';
 import { useReferenceDataVersion } from '../../../app/referenceData/ReferenceDataContext';
 
-type TabId = 'overview' | 'kyc' | 'documents' | 'circles' | 'payments' | 'notes' | 'timeline';
+type TabId = 'overview' | 'kycRisk' | 'documents' | 'circles' | 'payments' | 'notes' | 'timeline';
 
 const TAB_KEYS: { id: TabId; key: string }[] = [
   { id: 'overview', key: 'users.overview' },
-  { id: 'kyc', key: 'users.kycTab' },
+  { id: 'kycRisk', key: 'users.kycRiskTab' },
   { id: 'documents', key: 'users.documentsTab' },
   { id: 'circles', key: 'users.circles' },
   { id: 'payments', key: 'users.payments' },
@@ -24,12 +25,41 @@ const TAB_KEYS: { id: TabId; key: string }[] = [
   { id: 'timeline', key: 'users.timeline' },
 ];
 
+const VALID_TABS: TabId[] = ['overview', 'kycRisk', 'documents', 'circles', 'payments', 'notes', 'timeline'];
+
 export function UserWorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, locale } = useI18n();
   useReferenceDataVersion(); // Re-render when ref data (e.g. employment_status) is loaded for current locale
-  const [tab, setTab] = useState<TabId>('overview');
+  const rawTab = searchParams.get('tab');
+  /** Legacy tab removed from UI; old links still work. */
+  const tabParam = (rawTab === 'kyc' ? 'kycRisk' : rawTab) as TabId | null;
+  const tab: TabId = tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'overview';
+
+  useEffect(() => {
+    if (rawTab !== 'kyc') return;
+    setSearchParams(
+      (p) => {
+        const n = new URLSearchParams(p);
+        n.set('tab', 'kycRisk');
+        return n;
+      },
+      { replace: true }
+    );
+  }, [rawTab, setSearchParams]);
+  const setTab = useCallback(
+    (next: TabId) => {
+      setSearchParams((p) => {
+        const n = new URLSearchParams(p);
+        if (next === 'overview') n.delete('tab');
+        else n.set('tab', next);
+        return n;
+      });
+    },
+    [setSearchParams]
+  );
   const [toast, setToast] = useState<string | null>(null);
   const [docModalUrl, setDocModalUrl] = useState<string | null>(null);
 
@@ -39,10 +69,17 @@ export function UserWorkspacePage() {
     enabled: !!id,
   });
 
+  const { data: kycReviewRes, isLoading: kycReviewLoading } = useQuery({
+    queryKey: ['admin-user-kyc-review', id],
+    queryFn: () => fetchUserKycReview(id!),
+    enabled: !!id,
+  });
+  const review = kycReviewRes?.data;
+
   const { data: kycData } = useQuery({
     queryKey: ['admin-user-kyc', id],
     queryFn: () => fetchUserKyc(id!),
-    enabled: !!id && (tab === 'kyc' || tab === 'documents' || tab === 'timeline'),
+    enabled: !!id && (tab === 'documents' || tab === 'timeline' || tab === 'notes'),
   });
 
   const { data: circlesData } = useQuery({
@@ -62,17 +99,44 @@ export function UserWorkspacePage() {
   const profile = d?.profile as { firstName?: string; lastName?: string; civility?: string | null; countryOfResidence?: string; countryOfBirth?: string; birthDate?: string } | null;
   const kycProfile = d?.kycProfile as {
     firstName?: string;
+    middleName?: string;
     lastName?: string;
     dateOfBirth?: string;
     nationalityCountryCode?: string;
     residenceCountryCode?: string;
+    cityOfBirth?: string;
+    countryOfBirthCountryCode?: string;
     addressLine1?: string;
     addressLine2?: string;
     city?: string;
     postalCode?: string;
   } | null;
-  const riskProfile = d?.riskProfile as { employmentStatus?: string; monthlyIncome?: number; monthlyExpenses?: number; currency?: string } | null;
+  const idFromReview = review?.identity as {
+    cityOfBirth?: string;
+    countryOfBirthCountryCode?: string;
+  } | undefined;
+  const kycIdentitySelection = d?.kycIdentitySelection as {
+    issuingCountryCode?: string;
+    documentType?: 'ID_CARD' | 'PASSPORT' | 'RESIDENCE_PERMIT';
+  } | null;
+  const riskProfile = d?.riskProfile as {
+    employmentStatus?: string;
+    monthlyIncome?: number;
+    monthlyExpenses?: number;
+    currency?: string;
+    hasActiveLoans?: boolean;
+    totalMonthlyLoanPayments?: string | number;
+    debtToIncomeRatio?: string | number;
+    activeLoans?: Array<{ loanType?: string; monthlyPayment?: string | number }>;
+  } | null;
   const phone = d?.phoneVerification;
+  const selectedDocTypeLabel = kycIdentitySelection?.documentType === 'ID_CARD'
+    ? 'National ID Card'
+    : kycIdentitySelection?.documentType === 'PASSPORT'
+      ? 'Passport'
+      : kycIdentitySelection?.documentType === 'RESIDENCE_PERMIT'
+        ? 'Residence Permit'
+        : '—';
 
   if (!id) {
     navigate('/users');
@@ -104,7 +168,7 @@ export function UserWorkspacePage() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 mb-6">
+      <div className="flex flex-wrap items-center gap-4 mb-4">
         <h1 className="text-2xl font-semibold text-daret-fg">{fullName}</h1>
         <StatusChip status={d.user.kycStatus} type="kyc" />
         {kyc?.latestSubmissionId && (
@@ -116,6 +180,47 @@ export function UserWorkspacePage() {
           </Link>
         )}
       </div>
+
+      {review && (
+        <div className="mb-6 rounded-xl border border-daret-border bg-daret-card p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 text-sm">
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.fullName')}</p>
+            <p className="text-daret-fg font-medium truncate" title={review.userSummary.fullName}>
+              {review.userSummary.fullName}
+            </p>
+          </div>
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycStatus')}</p>
+            <StatusChip status={review.userSummary.kycStatus} type="kyc" />
+          </div>
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycSummary.riskLevel')}</p>
+            <p className="text-daret-fg font-medium">{review.userSummary.riskLevel}</p>
+          </div>
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.monthlyIncome')}</p>
+            <p className="text-daret-fg font-medium">{formatCurrency(review.userSummary.monthlyIncome, review.userSummary.currency)}</p>
+          </div>
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.monthlyExpenses')}</p>
+            <p className="text-daret-fg font-medium">{formatCurrency(review.userSummary.monthlyExpenses, review.userSummary.currency)}</p>
+          </div>
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycSummary.loanPayments')}</p>
+            <p className="text-daret-fg font-medium">{formatCurrency(review.userSummary.monthlyLoanPayments, review.userSummary.currency)}</p>
+          </div>
+          <div>
+            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycSummary.disposable')}</p>
+            <p
+              className={`font-medium ${
+                review.userSummary.disposableIncome < 0 ? 'text-red-400' : 'text-daret-green'
+              }`}
+            >
+              {formatCurrency(review.userSummary.disposableIncome, review.userSummary.currency)}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex border-b border-daret-border mb-6">
         {TAB_KEYS.map(({ id: tabId, key }) => (
@@ -169,6 +274,26 @@ export function UserWorkspacePage() {
                     label: t('users.countryOfResidence'),
                     value: <CountryDisplay code={profile?.countryOfResidence ?? kycProfile?.residenceCountryCode} />,
                   },
+                  {
+                    label: t('users.kycRisk.cityOfBirth'),
+                    value: kycProfile?.cityOfBirth ?? idFromReview?.cityOfBirth ?? '—',
+                  },
+                  {
+                    label: t('users.kycRisk.countryOfBirth'),
+                    value: (
+                      <CountryDisplay
+                        code={kycProfile?.countryOfBirthCountryCode ?? idFromReview?.countryOfBirthCountryCode}
+                      />
+                    ),
+                  },
+                  {
+                    label: 'KYC issuing country (SEPA)',
+                    value: <CountryDisplay code={kycIdentitySelection?.issuingCountryCode} />,
+                  },
+                  {
+                    label: 'Selected ID type',
+                    value: selectedDocTypeLabel,
+                  },
                   { label: t('users.kycStatus'), value: <StatusChip status={d.user.kycStatus} type="kyc" /> },
                 ]}
                 columns={1}
@@ -200,6 +325,22 @@ export function UserWorkspacePage() {
                   { label: t('users.monthlyIncome'), value: formatCurrency(riskProfile?.monthlyIncome, riskProfile?.currency) },
                   { label: t('users.monthlyExpenses'), value: formatCurrency(riskProfile?.monthlyExpenses, riskProfile?.currency) },
                   { label: t('users.currency'), value: riskProfile?.currency ?? '—' },
+                  ...(review
+                    ? [
+                        {
+                          label: t('users.kycRisk.hasLoans'),
+                          value: review.userSummary.monthlyLoanPayments > 0 || riskProfile?.hasActiveLoans ? t('users.yes') : '—',
+                        },
+                        {
+                          label: t('users.kycRisk.totalLoanPayments'),
+                          value: formatCurrency(review.userSummary.monthlyLoanPayments, review.userSummary.currency),
+                        },
+                        {
+                          label: t('users.kycRisk.disposable'),
+                          value: formatCurrency(review.userSummary.disposableIncome, review.userSummary.currency),
+                        },
+                      ]
+                    : []),
                 ]}
                 columns={1}
               />
@@ -207,6 +348,28 @@ export function UserWorkspacePage() {
           </div>
         </div>
       )}
+
+      {tab === 'kycRisk' &&
+        (kycReviewLoading ? (
+          <div className="flex items-center justify-center py-24 text-daret-muted">{t('common.loading')}</div>
+        ) : review ? (
+          <UserKycRiskTab
+            review={review}
+            locale={locale}
+            onViewAsset={async (assetId) => {
+              const res = await getSignedUrl(assetId);
+              if (res.success && res.data?.url) setDocModalUrl(res.data.url);
+            }}
+            onViewLivenessCapture={async (captureId) => {
+              const res = await getLivenessCaptureSignedUrl(captureId);
+              if (res.success && res.data?.url) setDocModalUrl(res.data.url);
+            }}
+            onCopy={() => setToast(t('common.copied'))}
+            t={t}
+          />
+        ) : (
+          <div className="flex items-center justify-center py-24 text-daret-muted">{t('common.noData')}</div>
+        ))}
 
       {tab === 'documents' && (
         <UserDocumentsTab
@@ -218,37 +381,6 @@ export function UserWorkspacePage() {
           }}
           t={t}
         />
-      )}
-
-      {tab === 'kyc' && (
-        <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-daret-fg mb-4">{t('users.kycSubmissions')}</h3>
-          {kycData?.data?.submissions?.length ? (
-            <ul className="space-y-3">
-              {kycData.data.submissions.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex items-center justify-between rounded-lg border border-daret-border p-3"
-                >
-                  <div>
-                    <span className="text-daret-fg font-medium">{s.status}</span>
-                    <span className="text-daret-muted text-sm ml-2">
-                      {t('users.submitted')} {s.submittedAt ? formatDateTime(s.submittedAt) : '—'}
-                    </span>
-                  </div>
-                  <Link
-                    to={`/kyc/submissions/${s.id}`}
-                    className="text-daret-green hover:underline text-sm"
-                  >
-                    {t('users.openSubmission')}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-daret-muted text-sm">{t('users.noKycSubmissions')}</p>
-          )}
-        </div>
       )}
 
       {tab === 'circles' && (

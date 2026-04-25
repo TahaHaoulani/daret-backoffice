@@ -31,7 +31,7 @@ export function LoginPage() {
         localStorage.setItem('accessToken', res.data.accessToken);
         localStorage.setItem('refreshToken', res.data.refreshToken);
         setUser(res.data.user);
-        navigate('/dashboard', { replace: true });
+        navigate('/users', { replace: true });
         return;
       }
       if (res.success && res.mfaRequired && res.mfaTicket) {

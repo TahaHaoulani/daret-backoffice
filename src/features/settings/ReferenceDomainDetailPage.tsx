@@ -15,7 +15,7 @@ export function ReferenceDomainDetailPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [newCode, setNewCode] = useState('');
   const [newLabelEn, setNewLabelEn] = useState('');
   const [newLabelFr, setNewLabelFr] = useState('');

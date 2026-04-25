@@ -9,10 +9,12 @@ import {
   rejectSubmission,
   getSignedUrl,
 } from '../../../api/kyc';
+import { fetchUserKycReview } from '../../users/api/usersApi';
 import { useAuth } from '../../auth/AuthContext';
 import { StatusChip } from '../../../components/StatusChip';
 import { CountryDisplay } from '../../../components/CountryDisplay';
 import { useI18n } from '../../../app/i18n/I18nContext';
+import { formatCurrency } from '../../kyc/utils/format';
 
 const REJECT_REASONS = [
   'DOCUMENT_UNREADABLE',
@@ -54,6 +56,14 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
     queryFn: () => fetchSubmissionById(submissionId!),
     enabled: !!submissionId,
   });
+
+  const userId = data?.data?.user?.id;
+  const { data: kycReviewRes } = useQuery({
+    queryKey: ['admin-user-kyc-review', userId],
+    queryFn: () => fetchUserKycReview(userId!),
+    enabled: !!userId,
+  });
+  const kycReview = kycReviewRes?.data;
 
   const selfieAssetId = data?.data?.mediaByType?.['SELFIE']?.[0]?.id;
   const { data: signedUrlRes } = useQuery({
@@ -180,6 +190,63 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
           ))}
         </ul>
       </div>
+
+      {kycReview && (
+        <div className="rounded-lg border border-daret-border bg-daret-dark/40 p-3 space-y-2 text-xs">
+          <p className="text-[length:var(--ops-label-size)] font-medium uppercase tracking-wide text-daret-muted opacity-90">
+            {t('granting.kycSummaryTitle')}
+          </p>
+          <p className="text-gray-300">
+            <span className="text-daret-muted">{t('granting.kycSummaryIdentity')}: </span>
+            {kycReview.userSummary.fullName}
+          </p>
+          <p className="text-gray-300">
+            <span className="text-daret-muted">{t('granting.kycSummaryDocs')}: </span>
+            {(kycReview.documents.items?.length ?? 0) + (kycReview.documents.selfie?.length ?? 0) > 0
+              ? `${kycReview.documents.items.length} ID / doc · ${kycReview.documents.selfie.length} selfie`
+              : '—'}
+          </p>
+          <p className="text-gray-300">
+            <span className="text-daret-muted">{t('granting.kycSummaryLiveness')}: </span>
+            {String((kycReview.liveness as { status?: string }).status ?? '—')}
+            {(kycReview.liveness as { captures?: unknown[] }).captures?.length
+              ? ` · ${(kycReview.liveness as { captures: unknown[] }).captures.length} capture(s)`
+              : ''}
+          </p>
+          <p className="text-gray-300">
+            <span className="text-daret-muted">{t('granting.kycSummaryFinancial')}: </span>
+            {formatCurrency(kycReview.userSummary.monthlyIncome, kycReview.userSummary.currency)} /{' '}
+            {formatCurrency(kycReview.userSummary.monthlyExpenses, kycReview.userSummary.currency)} →{' '}
+            <span className={kycReview.userSummary.disposableIncome < 0 ? 'text-red-400' : 'text-daret-green'}>
+              {formatCurrency(kycReview.userSummary.disposableIncome, kycReview.userSummary.currency)}
+            </span>
+          </p>
+          <p className="text-gray-300">
+            <span className="text-daret-muted">{t('granting.kycSummaryLoans')}: </span>
+            {kycReview.activeLoans.length} · {formatCurrency(kycReview.userSummary.monthlyLoanPayments, kycReview.userSummary.currency)}
+            /mo
+          </p>
+          {kycReview.riskSummary.flags.length > 0 && (
+            <p className="text-amber-400/90">
+              <span className="text-daret-muted">{t('granting.kycSummaryFlags')}: </span>
+              {kycReview.riskSummary.flags.slice(0, 4).join(' · ')}
+              {kycReview.riskSummary.flags.length > 4 ? '…' : ''}
+            </p>
+          )}
+          {(kycReview.system as { latestSubmission?: { internalNotes?: string | null } })?.latestSubmission?.internalNotes ? (
+            <p className="text-daret-muted line-clamp-3">
+              <span className="uppercase text-[10px]">{t('granting.kycSummaryNotes')}: </span>
+              {String((kycReview.system as { latestSubmission?: { internalNotes?: string | null } }).latestSubmission?.internalNotes)}
+            </p>
+          ) : null}
+          <Link
+            to={`/users/${userId}?tab=kycRisk`}
+            className="inline-block text-daret-green hover:underline font-medium"
+          >
+            {t('granting.kycSummaryOpenUser')}
+          </Link>
+        </div>
+      )}
 
       {lastEvents.length > 0 && (
         <div>

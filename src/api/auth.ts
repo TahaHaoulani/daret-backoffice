@@ -12,6 +12,13 @@ export interface AuthUser {
   email: string | null;
   role: string;
   preferredLocale?: string;
+  /** Combined profile first + last name when available (from GET /auth/me). */
+  fullName?: string | null;
+  organization?: string | null;
+  /** Optional extra roles for display (defaults to [role] in UI). */
+  roles?: string[];
+  /** ISO timestamp of last activity on the current admin session when available. */
+  lastLoginAt?: string | null;
 }
 
 export interface LoginResponse {
