@@ -3,23 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import type { AuthUser } from '../api/auth';
 import { useAuth } from '../features/auth/AuthContext';
 import { useTheme } from '../app/theme/ThemeContext';
-import { useI18n, type Locale } from '../app/i18n/I18nContext';
-import { getBackofficeEnvironment } from '../lib/backofficeEnv';
-import { userInitials, userPrimaryLabel } from '../lib/userDisplay';
-
-function formatMenuDateTime(iso: string | null | undefined, locale: Locale): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-}
+import { useI18n } from '../app/i18n/I18nContext';
+import { userInitials, userPrimaryLabel, formatFullNameLastUpper } from '../lib/userDisplay';
 
 function roleBadgeText(t: (key: string) => string, role: string): string {
   const r = role.trim().toLowerCase();
@@ -29,16 +14,10 @@ function roleBadgeText(t: (key: string) => string, role: string): string {
   return raw ? raw.replace(/\b\w/g, (c) => c.toUpperCase()) : role;
 }
 
-function envLabelKey(env: string): string {
-  if (env === 'local') return 'userMenu.envLocal';
-  if (env === 'staging') return 'userMenu.envStaging';
-  return 'userMenu.envProduction';
-}
-
 export function UserProfileMenu() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,11 +68,9 @@ export function UserProfileMenu() {
 
   const initials = userInitials(u.fullName, u.email);
   const primary = userPrimaryLabel(u.fullName, u.email);
-  const fullNameDisplay = u.fullName?.trim() || t('userMenu.noName');
+  const fullNameDisplay = u.fullName?.trim() ? formatFullNameLastUpper(u.fullName) : t('userMenu.noName');
   const emailDisplay = u.email?.trim() || t('userMenu.noEmail');
   const roles = [...new Set((u.roles?.length ? u.roles : u.role ? [u.role] : []).filter(Boolean))];
-  const env = getBackofficeEnvironment();
-  const lastLoginFormatted = formatMenuDateTime(u.lastLoginAt, locale);
 
   function rowClass(isInteractive = false) {
     return `px-3 py-2 text-sm ${isInteractive ? 'text-daret-fg hover:bg-daret-border/20 cursor-pointer w-full text-left flex items-center gap-2' : 'text-daret-muted'}`;
@@ -123,7 +100,7 @@ export function UserProfileMenu() {
   }
 
   return (
-    <div className="relative shrink-0" ref={containerRef}>
+    <div className="relative min-w-0 max-w-full" ref={containerRef}>
       <button
         ref={triggerRef}
         type="button"
@@ -133,7 +110,7 @@ export function UserProfileMenu() {
         aria-controls={menuId}
         aria-label={t('userMenu.openMenuAria')}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-xl border border-daret-border bg-daret-card/80 pl-1.5 pr-2 py-1.5 text-left transition hover:bg-daret-card hover:border-daret-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/60"
+        className="flex min-h-[2.5rem] min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-xl border border-daret-border bg-daret-card/80 pl-1.5 pr-2 py-1.5 text-left transition hover:bg-daret-card hover:border-daret-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/60"
       >
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-daret-green/20 text-xs font-semibold text-daret-green"
@@ -141,9 +118,9 @@ export function UserProfileMenu() {
         >
           {initials}
         </span>
-        <span className="hidden min-w-0 sm:flex flex-col items-start leading-tight">
-          <span className="max-w-[10rem] truncate text-sm font-medium text-daret-fg">{primary}</span>
-          <span className="max-w-[10rem] truncate text-xs text-daret-muted">{emailDisplay !== primary ? emailDisplay : '\u00a0'}</span>
+        <span className="hidden min-w-0 flex-1 basis-0 flex-col items-stretch leading-tight sm:flex">
+          <span className="truncate text-sm font-medium text-daret-fg">{primary}</span>
+          <span className="truncate text-xs text-daret-muted">{emailDisplay !== primary ? emailDisplay : '\u00a0'}</span>
         </span>
         <svg
           className={`h-4 w-4 shrink-0 text-daret-muted transition ${open ? 'rotate-180' : ''}`}
@@ -261,26 +238,6 @@ export function UserProfileMenu() {
               </svg>
               {t('common.logOut')}
             </button>
-          </div>
-
-          <div className="mt-1 border-t border-daret-border pt-2" role="none">
-            <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-daret-muted">{t('userMenu.adminContext')}</p>
-            {env && (
-              <div className={rowClass(false)}>
-                <span className="font-medium text-daret-fg/90">{t('userMenu.environment')}: </span>
-                {t(envLabelKey(env))}
-              </div>
-            )}
-            {roles.length > 0 && (
-              <div className={rowClass(false)}>
-                <span className="font-medium text-daret-fg/90">{t('userMenu.currentRole')}: </span>
-                {roles.map((r) => roleBadgeText(t, r)).join(', ')}
-              </div>
-            )}
-            <div className={rowClass(false)}>
-              <span className="font-medium text-daret-fg/90">{t('userMenu.lastLogin')}: </span>
-              {lastLoginFormatted || t('userMenu.lastLoginUnknown')}
-            </div>
           </div>
         </div>
       )}

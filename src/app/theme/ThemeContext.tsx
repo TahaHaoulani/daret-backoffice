@@ -5,10 +5,10 @@ export type Theme = 'light' | 'dark';
 const STORAGE_KEY = 'daret-backoffice-theme';
 
 function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
   if (stored === 'light' || stored === 'dark') return stored;
-  return 'dark';
+  return 'light';
 }
 
 function applyTheme(theme: Theme) {

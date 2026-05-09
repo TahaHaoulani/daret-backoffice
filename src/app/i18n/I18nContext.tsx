@@ -4,6 +4,9 @@ import fr from '../../locales/fr.json';
 
 export type Locale = 'en' | 'fr';
 
+/** Locales with bundled messages; keep in sync with [messages]. */
+export const SUPPORTED_LOCALES: readonly Locale[] = ['en', 'fr'];
+
 const STORAGE_KEY = 'daret-backoffice-locale';
 
 const messages: Record<Locale, Record<string, unknown>> = {

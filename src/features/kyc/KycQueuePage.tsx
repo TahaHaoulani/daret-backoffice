@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchSubmissions, type SubmissionStatus } from '../../api/kyc';
 import { CountryDisplay } from '../../components/CountryDisplay';
+import { formatFullNameLastUpper } from '../../lib/userDisplay';
 
 const STATUSES: SubmissionStatus[] = ['PENDING_SCORING', 'IN_REVIEW', 'SUBMITTED', 'SCORING_IN_PROGRESS', 'APPROVED', 'REJECTED'];
 const DEFAULT_STATUS: SubmissionStatus = 'IN_REVIEW';
@@ -104,7 +105,7 @@ export function KycQueuePage() {
                       to={`/kyc/submissions/${row.submissionId}`}
                       className="text-daret-green hover:underline font-medium"
                     >
-                      {row.user.fullName || row.user.email || '—'}
+                      {row.user.fullName ? formatFullNameLastUpper(row.user.fullName) : row.user.email || '—'}
                     </Link>
                     {row.user.email && (
                       <span className="block text-xs text-daret-muted">{row.user.email}</span>

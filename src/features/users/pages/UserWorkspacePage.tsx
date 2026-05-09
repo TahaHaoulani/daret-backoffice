@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -9,9 +9,12 @@ import { StatusChip } from '../../../components/StatusChip';
 import { KeyValueGrid } from '../../../components/KeyValueGrid';
 import { CopyableValue } from '../../kyc/components/CopyableValue';
 import { formatDate, formatDateTime, mapEmploymentStatus, formatCurrency } from '../../kyc/utils/format';
+import { docTypeLabel } from '../../kyc/utils/docTypeLabel';
 import { CountryDisplay } from '../../../components/CountryDisplay';
 import { useI18n } from '../../../app/i18n/I18nContext';
+import { formatFullNameLastUpper } from '../../../lib/userDisplay';
 import { useReferenceDataVersion } from '../../../app/referenceData/ReferenceDataContext';
+import { UserBlacklistActions } from '../components/UserBlacklistActions';
 
 type TabId = 'overview' | 'kycRisk' | 'documents' | 'circles' | 'payments' | 'notes' | 'timeline';
 
@@ -26,6 +29,44 @@ const TAB_KEYS: { id: TabId; key: string }[] = [
 ];
 
 const VALID_TABS: TabId[] = ['overview', 'kycRisk', 'documents', 'circles', 'payments', 'notes', 'timeline'];
+
+const sectionIconSvg = 'h-5 w-5 shrink-0';
+
+function SectionCardTitle({ title, icon }: { title: string; icon: ReactNode }) {
+  return (
+    <h3 className="mb-4 flex items-center gap-2.5 text-sm font-semibold uppercase tracking-wide text-daret-fg">
+      <span className="inline-flex text-daret-green" aria-hidden>
+        {icon}
+      </span>
+      {title}
+    </h3>
+  );
+}
+
+function IconIdentityContact() {
+  return (
+    <svg className={sectionIconSvg} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+}
+
+function IconAddress() {
+  return (
+    <svg className={sectionIconSvg} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function IconFinancial() {
+  return (
+    <svg className={sectionIconSvg} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
 
 export function UserWorkspacePage() {
   const { id } = useParams<{ id: string }>();
@@ -150,11 +191,12 @@ export function UserWorkspacePage() {
     );
   }
 
-  const fullName =
+  const nameFromProfile =
     [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') ||
-    [kycProfile?.firstName, kycProfile?.lastName].filter(Boolean).join(' ') ||
-    d.user?.email ||
-    '—';
+    [kycProfile?.firstName, kycProfile?.lastName].filter(Boolean).join(' ');
+  const fullName = nameFromProfile
+    ? formatFullNameLastUpper(nameFromProfile)
+    : d.user?.email || '—';
 
   return (
     <div>
@@ -168,59 +210,23 @@ export function UserWorkspacePage() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        <h1 className="text-2xl font-semibold text-daret-fg">{fullName}</h1>
-        <StatusChip status={d.user.kycStatus} type="kyc" />
-        {kyc?.latestSubmissionId && (
-          <Link
-            to={`/kyc/submissions/${kyc.latestSubmissionId}`}
-            className="rounded-lg bg-daret-green hover:bg-daret-green-dim text-white px-4 py-2 text-sm font-medium"
-          >
-            {t('users.openKycSubmission')}
-          </Link>
-        )}
-      </div>
-
-      {review && (
-        <div className="mb-6 rounded-xl border border-daret-border bg-daret-card p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 text-sm">
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.fullName')}</p>
-            <p className="text-daret-fg font-medium truncate" title={review.userSummary.fullName}>
-              {review.userSummary.fullName}
-            </p>
-          </div>
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycStatus')}</p>
-            <StatusChip status={review.userSummary.kycStatus} type="kyc" />
-          </div>
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycSummary.riskLevel')}</p>
-            <p className="text-daret-fg font-medium">{review.userSummary.riskLevel}</p>
-          </div>
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.monthlyIncome')}</p>
-            <p className="text-daret-fg font-medium">{formatCurrency(review.userSummary.monthlyIncome, review.userSummary.currency)}</p>
-          </div>
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.monthlyExpenses')}</p>
-            <p className="text-daret-fg font-medium">{formatCurrency(review.userSummary.monthlyExpenses, review.userSummary.currency)}</p>
-          </div>
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycSummary.loanPayments')}</p>
-            <p className="text-daret-fg font-medium">{formatCurrency(review.userSummary.monthlyLoanPayments, review.userSummary.currency)}</p>
-          </div>
-          <div>
-            <p className="text-daret-muted text-xs uppercase tracking-wide">{t('users.kycSummary.disposable')}</p>
-            <p
-              className={`font-medium ${
-                review.userSummary.disposableIncome < 0 ? 'text-red-400' : 'text-daret-green'
-              }`}
-            >
-              {formatCurrency(review.userSummary.disposableIncome, review.userSummary.currency)}
-            </p>
-          </div>
+      <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
+          <h1 className="text-2xl font-semibold text-daret-fg">{fullName}</h1>
+          <StatusChip status={d.user.kycStatus} type="kyc" />
         </div>
-      )}
+        <div className="flex w-full flex-col items-end gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-3">
+          <UserBlacklistActions userId={d.user.id} blacklist={d.blacklist} t={t} setToast={setToast} />
+          {kyc?.latestSubmissionId && (
+            <Link
+              to={`/kyc/submissions/${kyc.latestSubmissionId}`}
+              className="shrink-0 rounded-lg bg-daret-green px-4 py-2 text-sm font-medium text-white hover:bg-daret-green-dim"
+            >
+              {t('users.openKycSubmission')}
+            </Link>
+          )}
+        </div>
+      </div>
 
       <div className="flex border-b border-daret-border mb-6">
         {TAB_KEYS.map(({ id: tabId, key }) => (
@@ -241,7 +247,7 @@ export function UserWorkspacePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
             <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-daret-fg uppercase tracking-wide mb-4">{t('users.identityAndContact')}</h3>
+              <SectionCardTitle title={t('users.identityAndContact')} icon={<IconIdentityContact />} />
               <KeyValueGrid
                 rows={[
                   { label: t('users.civility'), value: profile?.civility ?? '—' },
@@ -302,7 +308,7 @@ export function UserWorkspacePage() {
           </div>
           <div className="space-y-6">
             <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-daret-fg uppercase tracking-wide mb-4">{t('users.address')}</h3>
+              <SectionCardTitle title={t('users.address')} icon={<IconAddress />} />
               <KeyValueGrid
                 rows={[
                   { label: t('users.addressLine1'), value: kycProfile?.addressLine1 ?? '—' },
@@ -318,7 +324,7 @@ export function UserWorkspacePage() {
               />
             </div>
             <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-daret-fg uppercase tracking-wide mb-4">{t('users.financialProfile')}</h3>
+              <SectionCardTitle title={t('users.financialProfile')} icon={<IconFinancial />} />
               <KeyValueGrid
                 rows={[
                   { label: t('users.employment'), value: mapEmploymentStatus(riskProfile?.employmentStatus, locale) },
@@ -509,19 +515,6 @@ export function UserWorkspacePage() {
       )}
     </div>
   );
-}
-
-const DOC_TYPE_KEYS: Record<string, string> = {
-  SELFIE: 'users.docTypeSelfie',
-  ID_FRONT: 'users.docTypeIdFront',
-  ID_BACK: 'users.docTypeIdBack',
-  PASSPORT: 'users.docTypePassport',
-  PROOF_OF_ADDRESS: 'users.docTypeProofOfAddress',
-  PAYSLIP: 'users.docTypePayslip',
-};
-
-function docTypeLabel(type: string, t: (key: string) => string): string {
-  return DOC_TYPE_KEYS[type] ? t(DOC_TYPE_KEYS[type]) : type;
 }
 
 type MediaAsset = { id: string; type: string; submissionId: string; status: string; createdAt: string | undefined };

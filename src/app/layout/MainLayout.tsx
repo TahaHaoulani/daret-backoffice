@@ -1,36 +1,28 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { UserProfileMenu } from '../../components/UserProfileMenu';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import { useI18n } from '../i18n/I18nContext';
 import { ReferenceDataProvider } from '../referenceData/ReferenceDataContext';
 import { ReferenceDataLoader } from '../referenceData/ReferenceDataLoader';
-import type { Locale } from '../i18n/I18nContext';
 
-const FLAG_CDN = 'https://flagcdn.com/w40';
-/** Locale to ISO 3166-1 alpha-2 for flag image (en → GB, fr → FR). */
-const localeFlagCode: Record<Locale, string> = { en: 'gb', fr: 'fr' };
-
-function LocaleFlag({ locale }: { locale: Locale }) {
-  return (
-    <img
-      src={`${FLAG_CDN}/${localeFlagCode[locale]}.png`}
-      alt=""
-      className="h-4 w-6 object-cover rounded-sm shrink-0"
-      width={24}
-      height={16}
-      loading="lazy"
-    />
-  );
-}
-
-function navLinkActive(pathname: string, to: string): boolean {
+function pathMatchesNav(pathname: string, to: string): boolean {
   if (pathname === to) return true;
   return pathname.startsWith(`${to}/`);
+}
+
+/** Active state for a child under the Admin dropdown. */
+function pathMatchesAdminChild(pathname: string, to: string): boolean {
+  if (to === '/settings/security') return pathname.startsWith('/settings/security');
+  if (to === '/settings/reference-data') return pathname.startsWith('/settings/reference-data');
+  if (to === '/crons') return pathname === '/crons' || pathname.startsWith('/crons/');
+  return pathname === to || pathname.startsWith(`${to}/`);
 }
 
 const navKeys = [
   { to: '/users', key: 'nav.users' },
   { to: '/granting', key: 'nav.granting' },
+  { to: '/recouvrement', key: 'nav.recouvrement' },
   { to: '/scoring', key: 'nav.scoring' },
   { to: '/circles', key: 'nav.circles' },
 ] as const;
@@ -42,19 +34,40 @@ const adminNavItems = [
   { to: '/settings/security', key: 'nav.settings' },
 ] as const;
 
+function isAdminSectionActive(pathname: string): boolean {
+  return adminNavItems.some(({ to }) => pathMatchesAdminChild(pathname, to));
+}
+
+/** Primary nav + Admin trigger: calm pill active state (not full-height block). */
+function getNavItemClasses(isActive: boolean): string {
+  const base =
+    'inline-flex min-h-9 max-w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/40 focus-visible:ring-offset-2 focus-visible:ring-offset-daret-card';
+  if (isActive) {
+    return `${base} border border-daret-green/30 bg-daret-green/12 text-daret-green shadow-sm`;
+  }
+  return `${base} border border-transparent text-daret-muted hover:border-daret-border/70 hover:bg-daret-border/20 hover:text-daret-fg`;
+}
+
+function getAdminDropdownItemClasses(isActive: boolean): string {
+  const base =
+    'mx-1 block rounded-lg px-3 py-2 text-sm font-medium transition-[color,background-color,border-color] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/35 focus-visible:ring-offset-1 focus-visible:ring-offset-daret-card';
+  if (isActive) {
+    return `${base} border border-daret-green/25 bg-daret-green/10 text-daret-green`;
+  }
+  return `${base} border border-transparent text-daret-muted hover:bg-daret-border/20 hover:text-daret-fg`;
+}
+
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { t, locale, setLocale } = useI18n();
+  const { t } = useI18n();
   const location = useLocation();
-  const [langOpen, setLangOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  const langRef = useRef<HTMLDivElement>(null);
   const adminRef = useRef<HTMLDivElement>(null);
 
-  const isAdminActive = adminNavItems.some(({ to }) => location.pathname === to || location.pathname.startsWith(to === '/settings/security' ? '/settings' : to === '/crons' ? '/crons' : to));
+  const pathname = location.pathname;
+  const adminActive = isAdminSectionActive(pathname);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
       if (adminRef.current && !adminRef.current.contains(e.target as Node)) setAdminOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -65,90 +78,65 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <ReferenceDataProvider>
       <div className="min-h-screen bg-daret-dark flex flex-col">
         <ReferenceDataLoader />
-        <header className="border-b border-daret-border bg-daret-card/50 sticky top-0 z-10 w-full">
-        <div className="w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14 gap-4">
-          <Link to="/users" className="flex items-center shrink-0 text-daret-green hover:opacity-90 transition" aria-label="Daret Backoffice">
-            <img src="/logo.svg" alt="Daret" className="h-8 w-8" />
-          </Link>
-          <nav className="flex items-center gap-6 flex-1 justify-center min-w-0">
-              {navKeys.map(({ to, key }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`text-sm font-medium transition whitespace-nowrap ${
-                    navLinkActive(location.pathname, to)
-                      ? 'text-daret-green'
-                      : 'text-daret-muted hover:text-daret-fg'
-                  }`}
-                >
-                  {t(key)}
-                </Link>
-              ))}
-              <div className="relative" ref={adminRef}>
+        <header className="sticky top-0 z-10 w-full border-b border-daret-border bg-daret-card/80 backdrop-blur-sm">
+        <div className="flex h-16 min-h-16 w-full min-w-0 items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
+          <div className="flex shrink-0 items-center">
+            <Link
+              to="/users"
+              className="flex items-center rounded-lg text-daret-green transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/40 focus-visible:ring-offset-2 focus-visible:ring-offset-daret-card"
+              aria-label="Daret Backoffice"
+            >
+              <img src="/logo.svg" alt="Daret" className="h-8 w-8" width={32} height={32} />
+            </Link>
+          </div>
+          <nav className="flex min-w-0 flex-1 items-center justify-center gap-1 px-1 sm:gap-1.5 sm:px-2">
+              {/* Scroll only the main links: overflow-x-auto on a parent clips absolutely positioned dropdowns. */}
+              <div className="flex min-w-0 max-w-full items-center justify-center gap-1 overflow-x-auto py-0.5 sm:gap-1.5">
+                {navKeys.map(({ to, key }) => (
+                  <Link key={to} to={to} className={getNavItemClasses(pathMatchesNav(pathname, to))}>
+                    {t(key)}
+                  </Link>
+                ))}
+              </div>
+              <div
+                className="relative shrink-0 py-0.5"
+                ref={adminRef}
+                onMouseEnter={() => setAdminOpen(true)}
+                onMouseLeave={() => setAdminOpen(false)}
+              >
                 <button
                   type="button"
                   onClick={() => setAdminOpen((o) => !o)}
-                  className={`text-sm font-medium transition whitespace-nowrap flex items-center gap-1 ${
-                    isAdminActive ? 'text-daret-green' : 'text-daret-muted hover:text-daret-fg'
-                  }`}
+                  className={`${getNavItemClasses(adminActive)} ${adminOpen && !adminActive ? 'border-daret-border/60 bg-daret-border/15' : ''}`}
                   aria-expanded={adminOpen}
                   aria-haspopup="true"
                 >
                   {t('nav.admin')}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <svg className="h-3.5 w-3.5 shrink-0 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 {adminOpen && (
-                  <div className="absolute left-0 top-full mt-1 py-1 rounded-lg border border-daret-border bg-daret-card shadow-lg z-20 min-w-[160px]">
-                    {adminNavItems.map(({ to, key }) => (
-                      <Link
-                        key={to}
-                        to={to}
-                        onClick={() => setAdminOpen(false)}
-                        className={`block px-3 py-2 text-sm font-medium transition ${
-                          location.pathname === to || (to === '/settings/security' && location.pathname.startsWith('/settings/security')) || (to === '/crons' && location.pathname.startsWith('/crons')) || (to === '/settings/reference-data' && location.pathname.startsWith('/settings/reference-data'))
-                            ? 'text-daret-green bg-daret-green/10'
-                            : 'text-daret-muted hover:text-daret-fg hover:bg-daret-border/10'
-                        }`}
-                      >
-                        {t(key)}
-                      </Link>
-                    ))}
+                  <div className="absolute left-1/2 top-full z-50 min-w-[13.5rem] -translate-x-1/2 pt-1 sm:left-0 sm:translate-x-0 sm:min-w-[15rem]">
+                    <div className="rounded-xl border border-daret-border bg-daret-card py-1 shadow-lg ring-1 ring-daret-border/40">
+                      {adminNavItems.map(({ to, key }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setAdminOpen(false)}
+                          className={getAdminDropdownItemClasses(pathMatchesAdminChild(pathname, to))}
+                        >
+                          {t(key)}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
           </nav>
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="relative" ref={langRef}>
-              <button
-                type="button"
-                onClick={() => setLangOpen((o) => !o)}
-                className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-daret-muted hover:text-daret-fg hover:bg-daret-card transition"
-                aria-label={t('common.language')}
-                aria-expanded={langOpen}
-              >
-                <LocaleFlag locale={locale} />
-                <span className="font-medium">{t(locale === 'en' ? 'common.english' : 'common.french')}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {langOpen && (
-                <div className="absolute right-0 top-full mt-1 py-1 rounded-lg border border-daret-border bg-daret-card shadow-lg z-20 min-w-[80px]">
-                  {(['en', 'fr'] as Locale[]).map((loc) => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => { setLocale(loc); setLangOpen(false); }}
-                      className={`w-full px-3 py-1.5 text-left text-sm font-medium transition flex items-center gap-2 ${locale === loc ? 'text-daret-green bg-daret-green/10' : 'text-daret-muted hover:text-daret-fg hover:bg-daret-border/10'}`}
-                    >
-                      <LocaleFlag locale={loc} />
-                      {t(loc === 'en' ? 'common.english' : 'common.french')}
-                    </button>
-                  ))}
-                </div>
-              )}
+          <div className="flex min-w-0 shrink-0 items-center justify-end gap-3">
+            <div className="shrink-0">
+              <LanguageSelector />
             </div>
             <UserProfileMenu />
           </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,6 +14,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { StatusChip } from '../../../components/StatusChip';
 import { CountryDisplay } from '../../../components/CountryDisplay';
 import { useI18n } from '../../../app/i18n/I18nContext';
+import { formatFullNameLastUpper } from '../../../lib/userDisplay';
 import { formatCurrency } from '../../kyc/utils/format';
 
 const REJECT_REASONS = [
@@ -46,6 +47,7 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [rejectPreConfirmOpen, setRejectPreConfirmOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [approveNote, setApproveNote] = useState('');
   const [rejectReasons, setRejectReasons] = useState<string[]>([]);
@@ -100,10 +102,24 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
     onSuccess: () => {
       invalidate();
       setRejectOpen(false);
+      setRejectPreConfirmOpen(false);
       setRejectReasons([]);
       setRejectNote('');
     },
   });
+
+  const anyModalOpen = approveConfirmOpen || rejectPreConfirmOpen || rejectOpen;
+  useEffect(() => {
+    if (!anyModalOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      setApproveConfirmOpen(false);
+      setRejectPreConfirmOpen(false);
+      setRejectOpen(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [anyModalOpen]);
 
   if (!submissionId) {
     return (
@@ -127,7 +143,10 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
   const mediaByType = d.mediaByType ?? {};
   const canAct = submission && !['APPROVED', 'REJECTED'].includes(submission.status);
   const profile = d.user?.profile as { firstName?: string; lastName?: string; countryOfResidence?: string } | undefined;
-  const fullName = profile ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') : d.user?.email ?? '—';
+  const joinedProfile = profile ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') : '';
+  const fullName = joinedProfile
+    ? formatFullNameLastUpper(joinedProfile)
+    : (d.user?.email ?? '—');
   const lastEvents = (d.auditEvents ?? []).slice(0, 5);
 
   const phoneVerified = !!(d.user as { phoneVerification?: { verifiedAt?: string | null } } | undefined)?.phoneVerification?.verifiedAt;
@@ -198,7 +217,9 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
           </p>
           <p className="text-gray-300">
             <span className="text-daret-muted">{t('granting.kycSummaryIdentity')}: </span>
-            {kycReview.userSummary.fullName}
+            {kycReview.userSummary.fullName?.trim()
+              ? formatFullNameLastUpper(kycReview.userSummary.fullName)
+              : '—'}
           </p>
           <p className="text-gray-300">
             <span className="text-daret-muted">{t('granting.kycSummaryDocs')}: </span>
@@ -283,7 +304,11 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
           </button>
           <button
             type="button"
-            onClick={() => setApproveConfirmOpen(true)}
+            onClick={() => {
+              setRejectPreConfirmOpen(false);
+              setRejectOpen(false);
+              setApproveConfirmOpen(true);
+            }}
             disabled={approveMu.isPending}
             className="w-full rounded-lg bg-daret-green hover:bg-daret-green-dim text-white py-1.5 text-xs font-medium disabled:opacity-50"
           >
@@ -291,8 +316,11 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
           </button>
           <button
             type="button"
-            onClick={() => setRejectOpen(true)}
-            className="w-full rounded-lg border border-red-500/50 hover:bg-red-500/10 text-red-400 py-1.5 text-xs font-medium"
+            onClick={() => {
+              setApproveConfirmOpen(false);
+              setRejectPreConfirmOpen(true);
+            }}
+            className="w-full rounded-lg bg-red-600 hover:bg-red-700 text-white py-1.5 text-xs font-medium"
           >
             {t('granting.reject')}
           </button>
@@ -303,6 +331,7 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-daret-card border border-daret-border rounded-xl p-4 max-w-sm w-full">
             <h3 className="text-sm font-semibold text-daret-fg mb-2">{t('granting.approveSubmission')}</h3>
+            <p className="text-xs text-daret-muted mb-3">{t('granting.approveConfirmIntro')}</p>
             <input
               type="text"
               value={approveNote}
@@ -312,6 +341,7 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
             />
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => approveMu.mutate()}
                 disabled={approveMu.isPending}
                 className="flex-1 rounded-lg bg-daret-green hover:bg-daret-green-dim text-white py-1.5 text-sm font-medium"
@@ -319,7 +349,36 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
                 {t('granting.confirm')}
               </button>
               <button
+                type="button"
                 onClick={() => setApproveConfirmOpen(false)}
+                className="rounded-lg border border-daret-border text-gray-300 py-1.5 px-3 text-sm font-medium"
+              >
+                {t('granting.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectPreConfirmOpen && !rejectOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-daret-card border border-daret-border rounded-xl p-4 max-w-sm w-full">
+            <h3 className="text-sm font-semibold text-daret-fg mb-2">{t('granting.rejectSubmission')}</h3>
+            <p className="text-xs text-daret-muted mb-3">{t('granting.rejectPreConfirmIntro')}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectPreConfirmOpen(false);
+                  setRejectOpen(true);
+                }}
+                className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white py-1.5 text-sm font-medium"
+              >
+                {t('granting.continueLabel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRejectPreConfirmOpen(false)}
                 className="rounded-lg border border-daret-border text-gray-300 py-1.5 px-3 text-sm font-medium"
               >
                 {t('granting.cancel')}
@@ -357,6 +416,7 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
             />
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => rejectMu.mutate()}
                 disabled={rejectMu.isPending}
                 className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white py-1.5 text-sm font-medium"
@@ -364,7 +424,12 @@ export function SubmissionPreviewPanel({ submissionId, onRefreshQueue }: Submiss
                 {t('granting.reject')}
               </button>
               <button
-                onClick={() => setRejectOpen(false)}
+                type="button"
+                onClick={() => {
+                  setRejectOpen(false);
+                  setRejectReasons([]);
+                  setRejectNote('');
+                }}
                 className="rounded-lg border border-daret-border text-gray-300 py-1.5 px-3 text-sm font-medium"
               >
                 {t('granting.cancel')}

@@ -7,6 +7,7 @@ import { CompactTable } from '../../../components/CompactTable';
 import { CountryDisplay } from '../../../components/CountryDisplay';
 import { StatusChip } from '../../../components/StatusChip';
 import { useI18n } from '../../../app/i18n/I18nContext';
+import { formatFullNameLastUpper } from '../../../lib/userDisplay';
 import { UsersSearchAdvancedFields } from '../components/UsersSearchAdvancedFields';
 import {
   advancedValuesFromSearchParams,
@@ -64,17 +65,6 @@ const CHIP_PARAM_KEYS = [
   'submittedFrom',
   'submittedTo',
 ] as const;
-
-function initials(fullName: string, email: string | null): string {
-  const s = fullName?.trim();
-  if (s) {
-    const parts = s.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    return s.slice(0, 2).toUpperCase();
-  }
-  if (email) return email.slice(0, 2).toUpperCase();
-  return '—';
-}
 
 function userWorkspaceHref(id: string): string {
   return new URL(`/users/${id}`, window.location.origin).href;
@@ -369,16 +359,11 @@ export function UsersSearchPage() {
 
   const columns = [
     {
-      key: 'avatar',
-      label: '',
-      className: 'w-10',
-      render: (row: UserSearchItem) => (
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-daret-muted/30 text-xs font-medium text-daret-muted">
-          {initials(row.fullName, row.email)}
-        </span>
-      ),
+      key: 'name',
+      label: t('users.name'),
+      sortKey: 'lastName',
+      render: (row: UserSearchItem) => (row.fullName ? formatFullNameLastUpper(row.fullName) : '—'),
     },
-    { key: 'name', label: t('users.name'), sortKey: 'lastName', render: (row: UserSearchItem) => row.fullName || '—' },
     { key: 'email', label: t('users.email'), render: (row: UserSearchItem) => row.email ?? '—' },
     {
       key: 'countryOfResidence',

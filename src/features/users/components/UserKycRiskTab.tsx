@@ -83,10 +83,91 @@ function formatDti(v: number | null | undefined): string {
   return `${(n * 100).toFixed(2)}%`;
 }
 
-function SectionCard({ title, children }: { title: string; children: ReactNode }) {
+const kycSectionIconClass = 'h-5 w-5 shrink-0';
+
+function IconKycIdentity() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  );
+}
+
+function IconKycAddress() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function IconKycDocuments() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  );
+}
+
+function IconKycLiveness() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+    </svg>
+  );
+}
+
+function IconKycFinancial() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function IconKycLoans() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  );
+}
+
+function IconKycRisk() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
+function IconKycSystem() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function IconKycHistory() {
+  return (
+    <svg className={kycSectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function SectionCard({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
     <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-      <h3 className="text-sm font-semibold text-daret-fg uppercase tracking-wide mb-4">{title}</h3>
+      <h3 className="mb-4 flex items-center gap-2.5 text-sm font-semibold uppercase tracking-wide text-daret-fg">
+        <span className="inline-flex text-daret-green" aria-hidden>
+          {icon}
+        </span>
+        {title}
+      </h3>
       {children}
     </div>
   );
@@ -220,7 +301,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SectionCard title={t('users.kycRisk.identity')}>
+        <SectionCard title={t('users.kycRisk.identity')} icon={<IconKycIdentity />}>
           <KeyValueGrid
             columns={1}
             rows={[
@@ -258,7 +339,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           />
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.address')}>
+        <SectionCard title={t('users.kycRisk.address')} icon={<IconKycAddress />}>
           <KeyValueGrid
             columns={1}
             rows={[
@@ -292,7 +373,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           ) : null}
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.documents')}>
+        <SectionCard title={t('users.kycRisk.documents')} icon={<IconKycDocuments />}>
           <p className="text-xs text-daret-muted mb-3">
             {t('users.kycRisk.selectedType')}: {String(review.documents.selectedDocumentType ?? '—')}
           </p>
@@ -337,7 +418,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           )}
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.liveness')}>
+        <SectionCard title={t('users.kycRisk.liveness')} icon={<IconKycLiveness />}>
           <KeyValueGrid
             columns={1}
             rows={[
@@ -367,7 +448,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           )}
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.financial')}>
+        <SectionCard title={t('users.kycRisk.financial')} icon={<IconKycFinancial />}>
           {!fp && incomeDocs.length === 0 ? (
             <p className="text-sm text-daret-muted">{t('common.noData')}</p>
           ) : (
@@ -413,7 +494,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           )}
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.activeLoans')}>
+        <SectionCard title={t('users.kycRisk.activeLoans')} icon={<IconKycLoans />}>
           {review.activeLoans.length === 0 ? (
             <p className="text-sm text-daret-muted">{t('users.kycRisk.noLoans')}</p>
           ) : (
@@ -461,7 +542,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           )}
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.riskSummary')}>
+        <SectionCard title={t('users.kycRisk.riskSummary')} icon={<IconKycRisk />}>
           <p className={`text-sm font-medium mb-2 ${riskLevelCls}`}>
             {t('users.kycRisk.riskLevel')}: {riskLevel}
           </p>
@@ -488,7 +569,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
           )}
         </SectionCard>
 
-        <SectionCard title={t('users.kycRisk.system')}>
+        <SectionCard title={t('users.kycRisk.system')} icon={<IconKycSystem />}>
           <KeyValueGrid
             columns={1}
             rows={[
@@ -530,7 +611,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
         </SectionCard>
       </div>
 
-      <SectionCard title={t('users.kycRisk.reviewHistory')}>
+      <SectionCard title={t('users.kycRisk.reviewHistory')} icon={<IconKycHistory />}>
         {review.reviewHistory.length === 0 ? (
           <p className="text-sm text-daret-muted">{t('users.noEvents')}</p>
         ) : (

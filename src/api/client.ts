@@ -20,9 +20,14 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
+      const reqUrl = String(err.config?.url ?? '');
+      // Wrong password on login also returns 401; do not reload or the error UI disappears.
+      const isPasswordLogin = reqUrl.includes('auth/login');
+      if (!isPasswordLogin) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }

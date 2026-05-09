@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSubmissions, type SubmissionListItem, type SubmissionStatus } from '../../../api/kyc';
@@ -6,8 +6,12 @@ import { StatusChip } from '../../../components/StatusChip';
 import { CompactTable } from '../../../components/CompactTable';
 import { SubmissionPreviewPanel } from '../components/SubmissionPreviewPanel';
 import { useI18n } from '../../../app/i18n/I18nContext';
+import { formatFullNameLastUpper } from '../../../lib/userDisplay';
+import { CountryDisplay } from '../../../components/CountryDisplay';
 
-const STATUSES: SubmissionStatus[] = ['SUBMITTED', 'IN_REVIEW', 'APPROVED', 'REJECTED'];
+const STATUSES: SubmissionStatus[] = ['IN_REVIEW', 'APPROVED', 'REJECTED'];
+
+const DEFAULT_GRANTING_STATUS: SubmissionStatus = 'IN_REVIEW';
 
 function slaBadge(submittedAt: string | null): { label: string; className: string } | null {
   if (!submittedAt) return null;
@@ -24,20 +28,34 @@ export function GrantingQueuePage() {
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [country, setCountry] = useState(searchParams.get('country') ?? '');
   const [assignedToMe, setAssignedToMe] = useState(searchParams.get('assignedToMe') === 'true');
-  const [pendingSla, setPendingSla] = useState(searchParams.get('pendingSla') === 'true');
   const selectedId = searchParams.get('selected');
   const page = Number(searchParams.get('page')) || 1;
-  const status = statusParam && STATUSES.includes(statusParam) ? statusParam : undefined;
+  const status: SubmissionStatus =
+    statusParam && STATUSES.includes(statusParam as SubmissionStatus) ? (statusParam as SubmissionStatus) : DEFAULT_GRANTING_STATUS;
+
+  useEffect(() => {
+    if (!statusParam || !STATUSES.includes(statusParam as SubmissionStatus)) {
+      setSearchParams(
+        (p) => {
+          const n = new URLSearchParams(p);
+          n.set('status', DEFAULT_GRANTING_STATUS);
+          if (!n.get('page')) n.set('page', '1');
+          n.delete('pendingSla');
+          return n;
+        },
+        { replace: true },
+      );
+    }
+  }, [statusParam, setSearchParams]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['granting-submissions', status, search, country, assignedToMe, pendingSla, page],
+    queryKey: ['granting-submissions', status, search, country, assignedToMe, page],
     queryFn: () =>
       fetchSubmissions({
         status,
         search: search || undefined,
         country: country || undefined,
         assignedToMe: assignedToMe || undefined,
-        pendingSla: pendingSla || undefined,
         page,
         size: 20,
         sort: 'submittedAt',
@@ -57,7 +75,7 @@ export function GrantingQueuePage() {
     if (country) next.set('country', country);
     else next.delete('country');
     next.set('assignedToMe', String(assignedToMe));
-    next.set('pendingSla', String(pendingSla));
+    next.delete('pendingSla');
     next.set('page', '1');
     setSearchParams(next);
   }
@@ -91,9 +109,28 @@ export function GrantingQueuePage() {
       label: t('granting.user'),
       render: (row: SubmissionListItem) => (
         <span className="text-daret-green font-medium">
-          {row.user.fullName || row.user.email || '—'}
+          {row.user.fullName ? formatFullNameLastUpper(row.user.fullName) : '—'}
         </span>
       ),
+    },
+    {
+      key: 'email',
+      label: t('granting.email'),
+      className: 'min-w-0 max-w-[22rem]',
+      render: (row: SubmissionListItem) =>
+        row.user.email ? (
+          <span className="block truncate text-sm text-daret-muted" title={row.user.email}>
+            {row.user.email}
+          </span>
+        ) : (
+          <span className="text-daret-muted">—</span>
+        ),
+    },
+    {
+      key: 'countryOfResidence',
+      label: t('granting.countryOfResidence'),
+      className: 'min-w-0 whitespace-nowrap',
+      render: (row: SubmissionListItem) => <CountryDisplay code={row.user.country} className="text-sm text-daret-muted whitespace-nowrap" />,
     },
     {
       key: 'status',
@@ -130,7 +167,7 @@ export function GrantingQueuePage() {
   ];
 
   return (
-    <div className="ops-container max-w-[1320px] mx-auto px-4 py-4">
+    <div className="mx-auto w-full max-w-[min(100%,100rem)] px-4 py-4 sm:px-6">
       <h1 className="text-[length:var(--ops-heading-size)] font-semibold text-daret-fg mb-4">{t('granting.title')}</h1>
 
       <div className="flex flex-wrap gap-3 mb-4">
@@ -148,20 +185,16 @@ export function GrantingQueuePage() {
                 });
               }}
               className={`px-3 py-1.5 text-sm font-medium ${
-                (status ?? '') === s ? 'bg-daret-green text-white' : 'text-daret-muted hover:text-daret-fg hover:bg-daret-card'
+                status === s ? 'bg-daret-green text-white' : 'text-daret-muted hover:text-daret-fg hover:bg-daret-card'
               }`}
             >
-              {s === 'SUBMITTED' ? t('granting.pending') : s === 'IN_REVIEW' ? t('dashboard.inReview') : s === 'APPROVED' ? t('dashboard.approved') : t('dashboard.rejected')}
+              {s === 'IN_REVIEW' ? t('dashboard.inReview') : s === 'APPROVED' ? t('dashboard.approved') : t('dashboard.rejected')}
             </button>
           ))}
         </div>
         <label className="flex items-center gap-2 text-sm text-daret-muted">
           <input type="checkbox" checked={assignedToMe} onChange={(e) => setAssignedToMe(e.target.checked)} />
           {t('granting.assignedToMe')}
-        </label>
-        <label className="flex items-center gap-2 text-sm text-daret-muted">
-          <input type="checkbox" checked={pendingSla} onChange={(e) => setPendingSla(e.target.checked)} />
-          {t('granting.onlyPendingSla')}
         </label>
         <input
           type="search"
@@ -187,8 +220,8 @@ export function GrantingQueuePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 min-w-0">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="min-w-0 lg:col-span-4">
           <CompactTable<SubmissionListItem>
             columns={columns}
             rows={items}
@@ -224,7 +257,7 @@ export function GrantingQueuePage() {
             </div>
           )}
         </div>
-        <div className="lg:col-span-1 min-h-[400px] flex flex-col">
+        <div className="min-h-[400px] flex flex-col lg:col-span-1">
           <div className="sticky top-4">
             <SubmissionPreviewPanel
               submissionId={selectedId ?? null}

@@ -75,7 +75,14 @@ export interface UserSearchResponse {
 }
 
 export interface UserWorkspaceData {
-  user: { id: string; email: string | null; kycStatus: string; createdAt?: string; updatedAt?: string };
+  user: {
+    id: string;
+    email: string | null;
+    organizationId?: string;
+    kycStatus: string;
+    createdAt?: string;
+    updatedAt?: string;
+  };
   profile: Record<string, unknown> | null;
   kycProfile: Record<string, unknown> | null;
   kycIdentitySelection: {
@@ -94,7 +101,33 @@ export interface UserWorkspaceData {
   } | null;
   counts: { circles: number; payments: number };
   lastLoginAt: string | null;
+  /** Present when API returns workspace payload including blacklist summary. */
+  blacklist?: UserBlacklistState;
 }
+
+export type BlacklistReasonCode =
+  | 'FRAUD_SUSPECTED'
+  | 'IDENTITY_RISK'
+  | 'PAYMENT_RISK'
+  | 'ABUSE'
+  | 'MANUAL_DECISION'
+  | 'OTHER';
+
+export type UserBlacklistState =
+  | { active: false }
+  | {
+      active: true;
+      entry: {
+        id: string;
+        organizationId: string;
+        reasonCode: BlacklistReasonCode;
+        reasonComment: string;
+        source: string;
+        createdAt: string | null;
+        createdBy: string | null;
+        identifiers?: Array<{ type: string; strength: string; maskedDisplay: string | null }>;
+      };
+    };
 
 export interface UserKycData {
   submissions: Array<{
@@ -210,4 +243,24 @@ export interface BackofficeUserKycReviewDTO {
 
 export function fetchUserKycReview(id: string): Promise<{ success: boolean; data?: BackofficeUserKycReviewDTO }> {
   return api.get(`/users/${id}/kyc-review`).then((r) => r.data);
+}
+
+export function addUserToBlacklist(
+  id: string,
+  body: {
+    reasonCode: BlacklistReasonCode;
+    reasonComment: string;
+    nationalId?: string | null;
+    passportNumber?: string | null;
+    iban?: string | null;
+  }
+): Promise<{ success: boolean; data?: unknown }> {
+  return api.post(`/users/${id}/blacklist`, body).then((r) => r.data);
+}
+
+export function removeUserFromBlacklist(
+  id: string,
+  body: { deactivationReason: string }
+): Promise<{ success: boolean; data?: unknown }> {
+  return api.delete(`/users/${id}/blacklist`, { data: body }).then((r) => r.data);
 }

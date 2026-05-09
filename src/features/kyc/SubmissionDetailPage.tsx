@@ -18,6 +18,7 @@ import { RawDataAccordion } from './components/RawDataAccordion';
 import { ReviewChecklistCard } from './components/ReviewChecklistCard';
 import { SubmissionStatusChip } from './components/StatusChip';
 import { useI18n } from '../../app/i18n/I18nContext';
+import { docTypeLabel } from './utils/docTypeLabel';
 
 const REJECT_REASONS = [
   'DOCUMENT_UNREADABLE',
@@ -38,9 +39,11 @@ export function SubmissionDetailPage() {
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>('overview');
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectPreConfirmOpen, setRejectPreConfirmOpen] = useState(false);
   const [rejectReasons, setRejectReasons] = useState<string[]>([]);
   const [rejectNote, setRejectNote] = useState('');
   const [approveNote, setApproveNote] = useState('');
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [docModalUrl, setDocModalUrl] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -70,6 +73,7 @@ export function SubmissionDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submission', id] });
       setApproveNote('');
+      setApproveConfirmOpen(false);
     },
   });
   const rejectMu = useMutation({
@@ -77,6 +81,7 @@ export function SubmissionDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submission', id] });
       setRejectOpen(false);
+      setRejectPreConfirmOpen(false);
       setRejectReasons([]);
       setRejectNote('');
     },
@@ -106,6 +111,8 @@ export function SubmissionDetailPage() {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setRejectOpen(false);
+        setRejectPreConfirmOpen(false);
+        setApproveConfirmOpen(false);
         setDocModalUrl(null);
         return;
       }
@@ -114,11 +121,16 @@ export function SubmissionDetailPage() {
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
       if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
-        if (!approveMu.isPending) approveMu.mutate();
+        if (!approveMu.isPending) {
+          setRejectOpen(false);
+          setRejectPreConfirmOpen(false);
+          setApproveConfirmOpen(true);
+        }
       }
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        setRejectOpen(true);
+        setApproveConfirmOpen(false);
+        setRejectPreConfirmOpen(true);
       }
       if (e.key === 'i' || e.key === 'I') {
         e.preventDefault();
@@ -198,7 +210,7 @@ export function SubmissionDetailPage() {
 
             {tab === 'documents' && (
               <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-                <h3 className="font-medium text-daret-fg mb-4">Documents</h3>
+                <h3 className="font-medium text-daret-fg mb-4">{t('users.documents')}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {Object.entries(d.mediaByType ?? {}).map(([type, assets]) =>
                     assets.map((asset) => (
@@ -206,19 +218,20 @@ export function SubmissionDetailPage() {
                         key={asset.id}
                         className="rounded-lg border border-daret-border p-3 flex items-center justify-between"
                       >
-                        <span className="text-sm text-daret-muted">{type}</span>
+                        <span className="text-sm text-daret-fg">{docTypeLabel(type, t)}</span>
                         <button
+                          type="button"
                           onClick={() => handleViewDoc(asset.id)}
-                          className="text-sm text-daret-green hover:underline"
+                          className="text-sm text-daret-green hover:underline shrink-0 ml-2"
                         >
-                          View
+                          {t('users.viewDocument')}
                         </button>
                       </div>
                     ))
                   )}
                 </div>
                 {(!d.mediaByType || Object.keys(d.mediaByType).length === 0) && (
-                  <p className="text-daret-muted text-sm">No documents</p>
+                  <p className="text-daret-muted text-sm">{t('users.noDocuments')}</p>
                 )}
               </div>
             )}
@@ -550,22 +563,31 @@ export function SubmissionDetailPage() {
                       type="text"
                       value={approveNote}
                       onChange={(e) => setApproveNote(e.target.value)}
-                      placeholder="Approve note (optional)"
+                      placeholder={t('kyc.approveNoteOptional')}
                       className="w-full rounded-lg bg-daret-dark border border-daret-border px-3 py-2 text-daret-fg text-sm mb-2"
                     />
                     <button
-                      onClick={() => approveMu.mutate()}
+                      type="button"
+                      onClick={() => {
+                        setRejectOpen(false);
+                        setRejectPreConfirmOpen(false);
+                        setApproveConfirmOpen(true);
+                      }}
                       disabled={approveMu.isPending}
                       className="w-full rounded-lg bg-daret-green hover:bg-daret-green-dim text-white py-2 text-sm font-medium disabled:opacity-50"
                     >
-                      Approve
+                      {t('granting.approve')}
                     </button>
                   </div>
                   <button
-                    onClick={() => setRejectOpen(true)}
-                    className="w-full rounded-lg border border-red-500/50 hover:bg-red-500/10 text-red-400 py-2 text-sm font-medium"
+                    type="button"
+                    onClick={() => {
+                      setApproveConfirmOpen(false);
+                      setRejectPreConfirmOpen(true);
+                    }}
+                    className="w-full rounded-lg bg-red-600 hover:bg-red-700 text-white py-2 text-sm font-medium"
                   >
-                    Reject
+                    {t('granting.reject')}
                   </button>
                 </>
               )}
@@ -574,10 +596,70 @@ export function SubmissionDetailPage() {
         </div>
       </div>
 
+      {approveConfirmOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-daret-card border border-daret-border rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-daret-fg mb-2">{t('granting.approveSubmission')}</h3>
+            <p className="text-sm text-daret-muted mb-4">{t('granting.approveConfirmIntro')}</p>
+            {approveNote.trim() ? (
+              <p className="text-xs text-daret-muted mb-4 rounded-lg border border-daret-border bg-daret-dark/50 px-3 py-2">
+                <span className="font-medium text-daret-fg">{t('granting.noteOptional')}: </span>
+                {approveNote}
+              </p>
+            ) : null}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => approveMu.mutate()}
+                disabled={approveMu.isPending}
+                className="flex-1 rounded-lg bg-daret-green hover:bg-daret-green-dim text-white py-2 text-sm font-medium disabled:opacity-50"
+              >
+                {t('granting.confirm')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setApproveConfirmOpen(false)}
+                className="rounded-lg border border-daret-border text-daret-muted py-2 px-4 text-sm font-medium"
+              >
+                {t('granting.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectPreConfirmOpen && !rejectOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-daret-card border border-daret-border rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-daret-fg mb-2">{t('granting.rejectSubmission')}</h3>
+            <p className="text-sm text-daret-muted mb-4">{t('granting.rejectPreConfirmIntro')}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRejectPreConfirmOpen(false);
+                  setRejectOpen(true);
+                }}
+                className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white py-2 text-sm font-medium"
+              >
+                {t('granting.continueLabel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRejectPreConfirmOpen(false)}
+                className="rounded-lg border border-daret-border text-daret-muted py-2 px-4 text-sm font-medium"
+              >
+                {t('granting.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {rejectOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-daret-card border border-daret-border rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium text-daret-fg mb-4">Reject submission</h3>
+            <h3 className="text-lg font-medium text-daret-fg mb-4">{t('granting.rejectSubmission')}</h3>
             <p className="text-sm text-daret-muted mb-3">Select reasons:</p>
             <div className="space-y-2 mb-4">
               {REJECT_REASONS.map((r) => (
@@ -603,17 +685,23 @@ export function SubmissionDetailPage() {
             />
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => rejectMu.mutate()}
                 disabled={rejectMu.isPending}
                 className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white py-2 text-sm font-medium disabled:opacity-50"
               >
-                Reject
+                {t('granting.reject')}
               </button>
               <button
-                onClick={() => setRejectOpen(false)}
+                type="button"
+                onClick={() => {
+                  setRejectOpen(false);
+                  setRejectReasons([]);
+                  setRejectNote('');
+                }}
                 className="rounded-lg border border-daret-border text-daret-muted py-2 px-4 text-sm font-medium"
               >
-                Cancel
+                {t('granting.cancel')}
               </button>
             </div>
           </div>

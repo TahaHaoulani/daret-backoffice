@@ -759,6 +759,15 @@ export function ScoringModelDetailPage() {
                 {updateMatrixMu.isPending ? t('scoring.saving') : t('scoring.saveFinalMatrix')}
               </button>
             </div>
+            <div className="bg-daret-card border border-daret-border rounded-xl p-5 mt-6">
+              <h3 className="font-medium text-daret-fg mb-2">{t('scoring.blacklistPolicyTitle')}</h3>
+              <p className="text-daret-muted text-xs mb-3 leading-relaxed">
+                {t('scoring.blacklistPolicyDesc')}
+              </p>
+              <p className="text-daret-muted text-xs leading-relaxed border-t border-daret-border/60 pt-3">
+                {t('scoring.blacklistPolicyNote')}
+              </p>
+            </div>
           </>
         )}
 
@@ -878,19 +887,21 @@ export function ScoringModelDetailPage() {
 
         {scorecardTab === 'module-orchestration' && (
           <div className="bg-daret-card border border-daret-border rounded-xl p-5 mt-4">
-            <h3 className="font-medium text-daret-fg mb-2">Module orchestration</h3>
+            <h3 className="font-medium text-daret-fg mb-2">{t('scoring.tabModuleOrchestration')}</h3>
             <p className="text-daret-muted text-xs mb-4">
-              Enable or disable scoring modules for this scorecard. Only enabled modules run when this scorecard is used.
+              {t('scoring.moduleOrchestrationIntro')}
             </p>
             <ul className="space-y-3">
               {availableModules.map((mod) => {
                 const config = model.scorecardModules?.find((m) => m.moduleKey === mod.key);
                 const enabled = config?.enabled ?? true;
+                const title = t(`scoring.modules.${mod.key}.title`);
+                const desc = t(`scoring.modules.${mod.key}.description`);
                 return (
                   <li key={mod.key} className="flex items-center justify-between py-2 border-b border-daret-border/50 last:border-0">
                     <div>
-                      <span className="font-medium text-daret-fg">{mod.name}</span>
-                      <p className="text-daret-muted text-xs mt-0.5">{mod.description}</p>
+                      <span className="font-medium text-daret-fg">{title.startsWith('scoring.') ? mod.name : title}</span>
+                      <p className="text-daret-muted text-xs mt-0.5">{desc.startsWith('scoring.') ? mod.description : desc}</p>
                     </div>
                     <button
                       type="button"
@@ -904,7 +915,7 @@ export function ScoringModelDetailPage() {
                       disabled={updateModulesMu.isPending}
                       className={`text-xs font-medium px-3 py-1.5 rounded ${enabled ? 'bg-daret-green/20 text-daret-green' : 'bg-daret-border/50 text-daret-muted'}`}
                     >
-                      {enabled ? 'Enabled' : 'Disabled'}
+                      {enabled ? t('scoring.moduleEnabled') : t('scoring.moduleDisabled')}
                     </button>
                   </li>
                 );

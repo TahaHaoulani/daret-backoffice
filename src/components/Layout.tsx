@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
 const nav = [
-  { to: '/users', label: 'Users' },
+  { to: '/users', label: 'SAV' },
   { to: '/kyc/queue', label: 'KYC Queue' },
   { to: '/audit', label: 'Audit Log' },
 ];

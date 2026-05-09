@@ -22,6 +22,7 @@ import { CreatePublicCirclePage } from './features/circles/pages/CreatePublicCir
 import { CircleDetailPage } from './features/circles/pages/CircleDetailPage';
 import { ScoringPage } from './features/scoring/ScoringPage';
 import { ScoringModelDetailPage } from './features/scoring/ScoringModelDetailPage';
+import { RecouvrementPage } from './features/recouvrement/pages/RecouvrementPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,6 +71,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <MainLayout>
               <GrantingQueuePage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recouvrement"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <RecouvrementPage />
             </MainLayout>
           </ProtectedRoute>
         }
