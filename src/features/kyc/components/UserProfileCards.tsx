@@ -4,13 +4,11 @@ import {
   formatDate,
   formatDateTime,
   formatCurrency,
-  mapEmploymentStatus,
-  formatPercentRatio,
-  formatLoanType,
   formatKycDocumentType,
 } from '../utils/format';
 import type { DisplayUser, IdDocumentCompletionStatus } from '../types/displayUser';
 import { FieldRow } from './FieldRow';
+import { FinancialProfileCard } from './FinancialProfileCard';
 import { CountryDisplay } from '../../../components/CountryDisplay';
 import { CopyableValue } from './CopyableValue';
 import { StatusChip } from './StatusChip';
@@ -80,19 +78,6 @@ function IconAddress() {
     <svg className={sectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-}
-
-function IconFinancial() {
-  return (
-    <svg className={sectionIconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
     </svg>
   );
 }
@@ -227,52 +212,7 @@ export function UserProfileCards({ displayUser: u, onCopy, selfieAssetId }: User
           </dl>
         </div>
 
-        <div className="bg-daret-card border border-daret-border rounded-xl p-5">
-          <CardSectionTitle title={t('kyc.financialProfile')} icon={<IconFinancial />} />
-          <dl className="space-y-0">
-            <FieldRow label={t('kyc.employmentStatus')} value={mapEmploymentStatus(u.employmentStatus, locale)} />
-            <FieldRow label={t('kyc.monthlyIncome')} value={formatCurrency(u.monthlyIncome, u.currency)} />
-            <FieldRow label={t('kyc.monthlyExpenses')} value={formatCurrency(u.monthlyExpenses, u.currency)} />
-            <FieldRow label={t('kyc.currency')} value={u.currency} />
-            <FieldRow
-              label={t('kyc.hasActiveLoans')}
-              value={u.hasActiveLoans == null ? '—' : u.hasActiveLoans ? t('users.yes') : t('users.no')}
-            />
-            <FieldRow
-              label={t('kyc.totalMonthlyLoanPayments')}
-              value={formatCurrency(u.totalMonthlyLoanPayments, u.currency)}
-            />
-            <FieldRow label={t('kyc.debtToIncomeRatio')} value={formatPercentRatio(u.debtToIncomeRatio)} />
-            <FieldRow
-              label={t('kyc.remainingDisposableIncome')}
-              value={formatCurrency(u.remainingDisposableIncome, u.currency)}
-            />
-          </dl>
-          {u.activeLoans.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-daret-border">
-              <p className="text-xs font-semibold uppercase tracking-wide text-daret-muted mb-2">{t('kyc.activeLoansTitle')}</p>
-              <ul className="space-y-3">
-                {u.activeLoans.map((loan, i) => (
-                  <li
-                    key={`${loan.lenderName ?? ''}-${loan.loanType ?? ''}-${i}`}
-                    className="rounded-lg border border-daret-border/80 bg-daret-dark/30 px-3 py-2 text-sm"
-                  >
-                    <p className="font-medium text-daret-fg">
-                      {formatLoanType(loan.loanType)}
-                      {loan.lenderName ? <span className="text-daret-muted font-normal"> · {loan.lenderName}</span> : null}
-                    </p>
-                    <p className="text-daret-muted text-xs mt-1">
-                      {t('kyc.loanAmount')}: {formatCurrency(loan.amount, u.currency)} · {t('kyc.monthlyPayment')}:{' '}
-                      {formatCurrency(loan.monthlyPayment, u.currency)}
-                      {loan.durationMonths != null ? ` · ${t('kyc.durationMonths')}: ${loan.durationMonths}` : ''}
-                      {loan.startDate ? ` · ${t('kyc.startDate')}: ${formatDate(loan.startDate)}` : ''}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        <FinancialProfileCard displayUser={u} />
       </div>
 
       {lastUpdated && (

@@ -40,6 +40,7 @@ export interface DisplayUser {
   totalMonthlyLoanPayments: number | null;
   debtToIncomeRatio: number | null;
   remainingDisposableIncome: number | null;
+  bankIbanMasked: string | null;
   activeLoans: DisplayLoan[];
   identityDocumentType: string | null;
   identityIssuingCountryCode: string | null;
@@ -142,6 +143,8 @@ export interface SubmissionDetailData {
       hasActiveLoans?: boolean | null;
       totalMonthlyLoanPayments?: unknown;
       debtToIncomeRatio?: unknown;
+      bankIbanMasked?: string | null;
+      hasBankIban?: boolean | null;
       activeLoans?: Array<{
         loanType?: string | null;
         lenderName?: string | null;
@@ -271,6 +274,7 @@ export function mapToDisplayUser(data: SubmissionDetailData): DisplayUser {
     totalMonthlyLoanPayments,
     debtToIncomeRatio,
     remainingDisposableIncome,
+    bankIbanMasked: risk?.bankIbanMasked ?? null,
     activeLoans,
     identityDocumentType: sel?.documentType ?? null,
     identityIssuingCountryCode: sel?.issuingCountryCode ?? null,

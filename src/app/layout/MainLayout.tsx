@@ -134,10 +134,8 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 )}
               </div>
           </nav>
-          <div className="flex min-w-0 shrink-0 items-center justify-end gap-3">
-            <div className="shrink-0">
-              <LanguageSelector />
-            </div>
+          <div className="flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 sm:gap-3">
+            <LanguageSelector />
             <UserProfileMenu />
           </div>
         </div>

@@ -33,19 +33,17 @@ export function LanguageSelector() {
   }, []);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative shrink-0" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-daret-muted hover:text-daret-fg hover:bg-daret-card transition"
+        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm text-daret-muted hover:text-daret-fg hover:bg-daret-card transition"
         aria-label={t('common.language')}
+        aria-haspopup="true"
         aria-expanded={open}
       >
         <LocaleFlag locale={locale} />
         <span className="font-medium">{t(locale === 'en' ? 'common.english' : 'common.french')}</span>
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 py-1 rounded-lg border border-daret-border bg-daret-card shadow-lg z-20 min-w-[80px]">

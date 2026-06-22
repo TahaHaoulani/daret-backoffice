@@ -17,6 +17,11 @@ import { UserProfileCards, RiskSignalsPanel, computeRiskSignals } from './compon
 import { RawDataAccordion } from './components/RawDataAccordion';
 import { ReviewChecklistCard } from './components/ReviewChecklistCard';
 import { SubmissionStatusChip } from './components/StatusChip';
+import { BridgeVerificationRequestModal } from './components/BridgeVerificationRequestModal';
+import { BridgeVerificationCard } from './components/BridgeVerificationCard';
+import { BridgeVerificationChronologie } from './components/bridge/BridgeVerificationChronologie';
+import { EmailsTab } from '../emails/components/EmailsTab';
+import { VerifyWithBridgeButton } from '../../components/BridgeLogo';
 import { useI18n } from '../../app/i18n/I18nContext';
 import { docTypeLabel } from './utils/docTypeLabel';
 
@@ -29,7 +34,7 @@ const REJECT_REASONS = [
   'OTHER',
 ];
 
-type Tab = 'overview' | 'documents' | 'timeline' | 'notes' | 'scoring';
+type Tab = 'overview' | 'documents' | 'timeline' | 'notes' | 'scoring' | 'financialData' | 'emails';
 
 export function SubmissionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -47,6 +52,7 @@ export function SubmissionDetailPage() {
   const [commentText, setCommentText] = useState('');
   const [docModalUrl, setDocModalUrl] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [bridgeModalOpen, setBridgeModalOpen] = useState(false);
 
   function showToast(message: string) {
     setToast(message);
@@ -154,11 +160,13 @@ export function SubmissionDetailPage() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'documents', label: 'Documents' },
-    { id: 'scoring', label: 'Scoring' },
-    { id: 'timeline', label: 'Timeline' },
-    { id: 'notes', label: 'Notes' },
+    { id: 'overview', label: t('kyc.overview') },
+    { id: 'documents', label: t('kyc.documents') },
+    { id: 'scoring', label: t('nav.scoring') },
+    { id: 'financialData', label: t('kyc.financialData') },
+    { id: 'timeline', label: t('kyc.timeline') },
+    { id: 'notes', label: t('kyc.notes') },
+    { id: 'emails', label: t('emails.tab') },
   ];
 
   return (
@@ -483,6 +491,12 @@ export function SubmissionDetailPage() {
               </div>
             )}
 
+            {tab === 'financialData' && (
+              <div className="space-y-6">
+                <BridgeVerificationCard submissionId={id!} t={t} hideMetadata />
+              </div>
+            )}
+
             {tab === 'timeline' && (
               <div className="bg-daret-card border border-daret-border rounded-xl p-5">
                 <h3 className="font-medium text-daret-fg mb-4">Timeline</h3>
@@ -532,10 +546,15 @@ export function SubmissionDetailPage() {
                 )}
               </div>
             )}
+
+            {tab === 'emails' && id && (
+              <EmailsTab mode="application" applicationId={id} t={t} />
+            )}
           </div>
 
           <div className="lg:col-span-1">
-            <div className="sticky top-4 bg-daret-card border border-daret-border rounded-xl p-5 space-y-3">
+            <div className="sticky top-4 space-y-4">
+            <div className="bg-daret-card border border-daret-border rounded-xl p-5 space-y-3">
               <h3 className="font-medium text-daret-fg">Actions</h3>
               {submission && (
                 <p className="text-sm text-daret-muted">
@@ -558,6 +577,10 @@ export function SubmissionDetailPage() {
                   >
                     Mark in review
                   </button>
+                  <VerifyWithBridgeButton
+                    onClick={() => setBridgeModalOpen(true)}
+                    label={t('bridge.verifyWithBridge')}
+                  />
                   <div className="pt-2">
                     <input
                       type="text"
@@ -591,6 +614,10 @@ export function SubmissionDetailPage() {
                   </button>
                 </>
               )}
+            </div>
+            {tab === 'financialData' && (
+              <BridgeVerificationChronologie submissionId={id!} t={t} />
+            )}
             </div>
           </div>
         </div>
@@ -716,6 +743,16 @@ export function SubmissionDetailPage() {
           {toast}
         </div>
       )}
+
+      <BridgeVerificationRequestModal
+        submissionId={id!}
+        userEmail={d.user?.email}
+        open={bridgeModalOpen}
+        onClose={() => setBridgeModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['bridge-verification', id] })}
+        t={t}
+        setToast={setToast}
+      />
 
       {docModalUrl && (
         <div

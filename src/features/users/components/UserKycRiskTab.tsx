@@ -203,6 +203,8 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
     totalMonthlyLoanPayments?: number | null;
     debtToIncomeRatio?: number | null;
     currency?: string;
+    bankIbanMasked?: string | null;
+    hasBankIban?: boolean;
     disposableIncomeAfterExpensesAndLoans?: number;
     updatedAt?: string;
   } | null;
@@ -464,6 +466,7 @@ export function UserKycRiskTab({ review, locale, onViewAsset, onViewLivenessCapt
                         { label: t('users.employment'), value: mapEmploymentStatus(fp.employmentStatus, locale) },
                         { label: t('users.monthlyIncome'), value: formatCurrency(fp.monthlyIncome, fp.currency) },
                         { label: t('users.monthlyExpenses'), value: formatCurrency(fp.monthlyExpenses, fp.currency) },
+                        { label: t('users.bankIban'), value: fp.bankIbanMasked ?? '—' },
                         { label: t('users.kycRisk.hasLoans'), value: fp.hasActiveLoans ? t('users.yes') : '—' },
                         {
                           label: t('users.kycRisk.totalLoanPayments'),

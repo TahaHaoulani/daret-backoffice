@@ -91,7 +91,7 @@ export function UserBlacklistActions({ userId, blacklist: blacklistProp, t, setT
               setIban('');
               setModal('add');
             }}
-            className="shrink-0 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-daret-card)]"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-red-600 px-4 py-0 text-sm font-semibold text-white shadow-md transition hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-daret-card)]"
           >
             {t('users.blacklist.addButton')}
           </button>
@@ -102,7 +102,7 @@ export function UserBlacklistActions({ userId, blacklist: blacklistProp, t, setT
               setRemoveComment('');
               setModal('remove');
             }}
-            className="rounded-lg border border-daret-border bg-daret-dark px-3 py-1.5 text-sm font-medium text-daret-fg transition hover:border-daret-green/40 hover:text-daret-green focus:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/40"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-daret-border bg-daret-dark px-3 py-0 text-sm font-medium text-daret-fg transition hover:border-daret-green/40 hover:text-daret-green focus:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/40"
           >
             {t('users.blacklist.removeButton')}
           </button>

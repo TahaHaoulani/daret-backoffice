@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { fetchUserById, fetchUserKyc, fetchUserCircles, fetchUserPayments, fetchUserKycReview } from '../api/usersApi';
 import { getSignedUrl, getLivenessCaptureSignedUrl } from '../../../api/kyc';
 import { UserKycRiskTab } from '../components/UserKycRiskTab';
+import { BridgeVerificationCard } from '../../kyc/components/BridgeVerificationCard';
+import { BridgeVerificationRequestModal } from '../../kyc/components/BridgeVerificationRequestModal';
+import { VerifyWithBridgeButton } from '../../../components/BridgeLogo';
 import { StatusChip } from '../../../components/StatusChip';
 import { KeyValueGrid } from '../../../components/KeyValueGrid';
 import { CopyableValue } from '../../kyc/components/CopyableValue';
@@ -15,20 +18,23 @@ import { useI18n } from '../../../app/i18n/I18nContext';
 import { formatFullNameLastUpper } from '../../../lib/userDisplay';
 import { useReferenceDataVersion } from '../../../app/referenceData/ReferenceDataContext';
 import { UserBlacklistActions } from '../components/UserBlacklistActions';
+import { EmailsTab } from '../../emails/components/EmailsTab';
 
-type TabId = 'overview' | 'kycRisk' | 'documents' | 'circles' | 'payments' | 'notes' | 'timeline';
+type TabId = 'overview' | 'kycRisk' | 'financialData' | 'documents' | 'circles' | 'payments' | 'notes' | 'timeline' | 'emails';
 
 const TAB_KEYS: { id: TabId; key: string }[] = [
   { id: 'overview', key: 'users.overview' },
   { id: 'kycRisk', key: 'users.kycRiskTab' },
+  { id: 'financialData', key: 'users.financialDataTab' },
   { id: 'documents', key: 'users.documentsTab' },
   { id: 'circles', key: 'users.circles' },
   { id: 'payments', key: 'users.payments' },
   { id: 'notes', key: 'users.notes' },
   { id: 'timeline', key: 'users.timeline' },
+  { id: 'emails', key: 'users.emails' },
 ];
 
-const VALID_TABS: TabId[] = ['overview', 'kycRisk', 'documents', 'circles', 'payments', 'notes', 'timeline'];
+const VALID_TABS: TabId[] = ['overview', 'kycRisk', 'financialData', 'documents', 'circles', 'payments', 'notes', 'timeline', 'emails'];
 
 const sectionIconSvg = 'h-5 w-5 shrink-0';
 
@@ -103,6 +109,8 @@ export function UserWorkspacePage() {
   );
   const [toast, setToast] = useState<string | null>(null);
   const [docModalUrl, setDocModalUrl] = useState<string | null>(null);
+  const [bridgeModalOpen, setBridgeModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: userData, isLoading: userLoading } = useQuery({
     queryKey: ['admin-user', id],
@@ -166,6 +174,8 @@ export function UserWorkspacePage() {
     monthlyExpenses?: number;
     currency?: string;
     hasActiveLoans?: boolean;
+    bankIbanMasked?: string | null;
+    hasBankIban?: boolean;
     totalMonthlyLoanPayments?: string | number;
     debtToIncomeRatio?: string | number;
     activeLoans?: Array<{ loanType?: string; monthlyPayment?: string | number }>;
@@ -218,9 +228,16 @@ export function UserWorkspacePage() {
         <div className="flex w-full flex-col items-end gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-3">
           <UserBlacklistActions userId={d.user.id} blacklist={d.blacklist} t={t} setToast={setToast} />
           {kyc?.latestSubmissionId && (
+            <VerifyWithBridgeButton
+              onClick={() => setBridgeModalOpen(true)}
+              label={t('bridge.verifyWithBridge')}
+              className="w-full sm:w-auto shrink-0"
+            />
+          )}
+          {kyc?.latestSubmissionId && (
             <Link
               to={`/kyc/submissions/${kyc.latestSubmissionId}`}
-              className="shrink-0 rounded-lg bg-daret-green px-4 py-2 text-sm font-medium text-white hover:bg-daret-green-dim"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-daret-green px-4 py-0 text-sm font-semibold text-white hover:bg-daret-green-dim"
             >
               {t('users.openKycSubmission')}
             </Link>
@@ -331,6 +348,7 @@ export function UserWorkspacePage() {
                   { label: t('users.monthlyIncome'), value: formatCurrency(riskProfile?.monthlyIncome, riskProfile?.currency) },
                   { label: t('users.monthlyExpenses'), value: formatCurrency(riskProfile?.monthlyExpenses, riskProfile?.currency) },
                   { label: t('users.currency'), value: riskProfile?.currency ?? '—' },
+                  { label: t('users.bankIban'), value: riskProfile?.bankIbanMasked ?? '—' },
                   ...(review
                     ? [
                         {
@@ -376,6 +394,38 @@ export function UserWorkspacePage() {
         ) : (
           <div className="flex items-center justify-center py-24 text-daret-muted">{t('common.noData')}</div>
         ))}
+
+      {tab === 'financialData' && id && (
+        <BridgeVerificationCard
+          userId={id}
+          t={t}
+          pollWhilePending={false}
+          hideRequestButton
+          requestVerification={
+            kyc?.latestSubmissionId
+              ? {
+                  submissionId: kyc.latestSubmissionId,
+                  userEmail: d?.user?.email,
+                  onToast: setToast,
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {kyc?.latestSubmissionId && (
+        <BridgeVerificationRequestModal
+          submissionId={kyc.latestSubmissionId}
+          userEmail={d?.user?.email}
+          open={bridgeModalOpen}
+          onClose={() => setBridgeModalOpen(false)}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['bridge-verification', 'user', id] });
+          }}
+          t={t}
+          setToast={setToast}
+        />
+      )}
 
       {tab === 'documents' && (
         <UserDocumentsTab
@@ -487,6 +537,10 @@ export function UserWorkspacePage() {
             <p className="text-daret-muted text-sm">{t('users.noEvents')}</p>
           )}
         </div>
+      )}
+
+      {tab === 'emails' && id && (
+        <EmailsTab mode="customer" customerId={id} t={t} />
       )}
 
       {docModalUrl && (

@@ -23,6 +23,7 @@ import { CircleDetailPage } from './features/circles/pages/CircleDetailPage';
 import { ScoringPage } from './features/scoring/ScoringPage';
 import { ScoringModelDetailPage } from './features/scoring/ScoringModelDetailPage';
 import { RecouvrementPage } from './features/recouvrement/pages/RecouvrementPage';
+import { BridgeVerificationSuccessPage, BridgeVerificationErrorPage } from './features/bridge/pages/BridgeVerificationResultPages';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +37,8 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/mfa/setup" element={<MfaSetupPage />} />
       <Route path="/mfa/verify" element={<MfaVerifyPage />} />
+      <Route path="/bridge/verification/success" element={<BridgeVerificationSuccessPage />} />
+      <Route path="/bridge/verification/error" element={<BridgeVerificationErrorPage />} />
       <Route
         path="/"
         element={

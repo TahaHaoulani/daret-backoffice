@@ -110,7 +110,7 @@ export function UserProfileMenu() {
         aria-controls={menuId}
         aria-label={t('userMenu.openMenuAria')}
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-[2.5rem] min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-xl border border-daret-border bg-daret-card/80 pl-1.5 pr-2 py-1.5 text-left transition hover:bg-daret-card hover:border-daret-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/60"
+        className="flex min-h-[2.5rem] min-w-0 max-w-full shrink-0 flex-nowrap items-center gap-2 rounded-xl border border-daret-border bg-daret-card/80 pl-1.5 pr-2 py-1.5 text-left transition hover:bg-daret-card hover:border-daret-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-daret-green/60"
       >
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-daret-green/20 text-xs font-semibold text-daret-green"
